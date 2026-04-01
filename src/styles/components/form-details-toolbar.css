@@ -1,0 +1,315 @@
+/**
+ * Form details toolbar (FormDetails.jsx)
+ * Lives under src/styles/components/ — shared pattern: component CSS next to global styles.
+ */
+
+/* Form overview — professional dashboard style (scoped, theme-aware) */
+
+.fd-form-toolbar {
+  --fd-radius: 12px;
+  --fd-panel-radius: 8px;
+  /* Slightly smaller than default icon-sm — matches dense toolbar */
+  --fd-icon-size: 14px;
+  --fd-icon-hit: 1.625rem;
+  border-radius: var(--fd-radius);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+[data-bs-theme="dark"] .fd-form-toolbar {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Toolbar icons: slightly smaller than global .icon-sm (see index.css) */
+.fd-form-toolbar svg,
+.fd-form-toolbar .icon-sm svg {
+  width: var(--fd-icon-size);
+  height: var(--fd-icon-size);
+  flex-shrink: 0;
+}
+
+.fd-form-toolbar-accent {
+  height: 2px;
+  background: var(--bs-primary);
+}
+
+.fd-form-toolbar-body {
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+@media (min-width: 768px) {
+  .fd-form-toolbar-body {
+    padding: 1.35rem 1.5rem 1.5rem;
+  }
+}
+
+.fd-toolbar-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fd-form-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fd-id-chip {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Notification */
+.fd-btn-notify {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.fd-btn-notify:hover {
+  background: var(--bs-tertiary-bg);
+  border-color: color-mix(in srgb, var(--bs-primary) 35%, var(--bs-border-color));
+  color: var(--bs-body-color);
+}
+
+/* Two-column settings */
+.fd-pro-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 992px) {
+  .fd-pro-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.fd-pro-panel {
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--fd-panel-radius);
+  padding: 0.9rem 1rem;
+  overflow: visible;
+}
+
+.fd-pro-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.fd-pro-panel-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.fd-pro-panel-hint {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.fd-pro-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+}
+
+.fd-pro-heading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  color: var(--bs-emphasis-color);
+}
+
+/* Edit (pencil): borderless icon button */
+.fd-pro-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fd-icon-hit);
+  height: var(--fd-icon-hit);
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.fd-pro-edit-btn:hover {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-primary);
+}
+
+.fd-pro-edit-btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bs-primary) 28%, transparent);
+}
+
+.fd-pro-rename-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fd-pro-input {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border-color: var(--bs-border-color);
+  max-width: 100%;
+}
+
+.fd-pro-rename-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.fd-pro-btn-min {
+  min-width: 4.25rem;
+  font-weight: 600;
+}
+
+.fd-pro-folder-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.fd-pro-select {
+  flex: 1 1 10rem;
+  min-width: 0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-color: var(--bs-border-color);
+  background: var(--bs-body-bg) !important;
+  position: relative;
+  z-index: 50;
+  appearance: auto;
+  -webkit-appearance: menulist;
+  overflow: visible;
+}
+
+.fd-pro-apply-btn {
+  flex-shrink: 0;
+  min-width: 5rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* Endpoint */
+.fd-pro-url {
+  padding-top: 1rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.fd-pro-url-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.45rem;
+}
+
+.fd-pro-url-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--fd-panel-radius);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.fd-pro-url-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 500;
+  color: var(--bs-primary);
+  word-break: break-all;
+  line-height: 1.45;
+}
+
+.fd-pro-url-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fd-icon-hit);
+  height: var(--fd-icon-hit);
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fd-pro-url-copy:hover {
+  background: var(--bs-body-bg);
+  border-color: color-mix(in srgb, var(--bs-primary) 35%, var(--bs-border-color));
+}
+
+.fd-pro-copied {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bs-success);
+  min-width: 3rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.fd-pro-copied.is-on {
+  opacity: 1;
+}

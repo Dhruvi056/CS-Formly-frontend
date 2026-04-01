@@ -1,0 +1,33 @@
+/* Admin table action buttons (Edit/Delete) — match NobleUI-style outlines */
+
+.admin-user-action-btn {
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+.admin-user-action-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.btn-outline-primary.admin-user-action-btn:hover {
+  background: rgba(101, 113, 255, 0.10) !important;
+  color: var(--bs-primary) !important;
+}
+
+.btn-outline-danger.admin-user-action-btn:hover {
+  background: rgba(255, 51, 102, 0.10) !important;
+  color: var(--bs-danger) !important;
+}
+
+.btn-outline-primary.admin-user-action-btn:focus,
+.btn-outline-danger.admin-user-action-btn:focus {
+  box-shadow: none !important;
+}
+

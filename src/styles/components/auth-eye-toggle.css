@@ -1,0 +1,32 @@
+/* Password eye toggle: remove borders/underline/hover effects */
+.fd-auth-eye-toggle {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 0.55rem !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  color: var(--bs-secondary-color) !important;
+  cursor: pointer;
+}
+
+.fd-auth-eye-toggle:hover,
+.fd-auth-eye-toggle:focus,
+.fd-auth-eye-toggle:active {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  text-decoration: none !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+.fd-auth-eye-toggle svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
