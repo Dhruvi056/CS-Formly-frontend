@@ -140,6 +140,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/pricing"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="*"
           element={
             currentUser ? (

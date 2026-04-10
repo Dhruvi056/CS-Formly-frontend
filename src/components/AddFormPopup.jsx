@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import { normalizeMongoId } from "../utils/mongoIds.js";
 
 function ChevronDown({ open }) {
@@ -196,7 +197,13 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
   const [timezone, setTimezone] = useState("Asia/Kolkata (UTC+05:30)");
   const [folders, setFolders] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [formLimitError, setFormLimitError] = useState("");
   const { currentUser, userMeta } = useAuth();
+  const navigate = useNavigate();
+
+  const plan = userMeta?.subscriptionPlan || "free";
+  const maxFolders = plan === "free" ? 2 : plan === "pro" ? 5 : 999;
+  const isFolderLimitReached = folders.length >= maxFolders;
 
   const LucideIcon = ({ name, className = "" }) => {
     useEffect(() => {
@@ -222,7 +229,17 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
         const token = localStorage.getItem("authToken");
         if (!token) return;
         const res = await fetch("/api/folders", { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) setFolders(await res.json());
+        if (res.ok) {
+          const foldersData = await res.json();
+          let myFolders = foldersData;
+          if (userMeta?.role === "super_admin") {
+            myFolders = foldersData.filter(f => {
+              const ownerId = typeof f.user === "object" ? f.user?._id : f.user;
+              return String(ownerId) === String(currentUser.uid);
+            });
+          }
+          setFolders(myFolders);
+        }
       } catch (err) {
         console.error("Error fetching folders:", err);
       }
@@ -259,7 +276,11 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
         onClose();
       } else {
         const errBody = await res.json().catch(() => ({}));
-        toast.error(errBody.message || "Could not create");
+        if (errBody.code === "FORM_LIMIT_REACHED") {
+          setFormLimitError(errBody.message || "You have reached your form limit. Please increase your package to add more.");
+        } else {
+          toast.error(errBody.message || "Could not create");
+        }
       }
     } catch (err) {
       toast.error("An error occurred");
@@ -288,6 +309,17 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
           </div>
 
           <div className="modal-body p-4 pt-3">
+            {formLimitError && (
+              <div className="alert alert-danger bg-danger-subtle text-danger d-flex align-items-center mb-3 p-3 rounded-3 border border-danger-subtle shadow-sm flex-wrap gap-2" style={{ fontSize: '13px', fontWeight: '500' }}>
+                <div className="d-flex align-items-center mb-1 w-100">
+                  <LucideIcon name="alert-circle" className="icon-sm me-2 flex-shrink-0" />
+                  <span>{formLimitError}</span>
+                </div>
+                <button className="btn btn-sm btn-danger py-1 px-3 mt-1" onClick={() => navigate('/pricing')} style={{ borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                  Upgrade Plan
+                </button>
+              </div>
+            )}
             {/* Tabs */}
             <div className="d-flex mb-4 bg-light p-1" style={{ borderRadius: '10px' }}>
               {["Form", "Folder"].map(tab => (
@@ -341,6 +373,23 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                     <TimezonePicker value={timezone} onChange={setTimezone} />
                   </div>
                 </>
+              ) : isFolderLimitReached ? (
+                <div className="p-3 border rounded shadow-sm" style={{ borderColor: '#d8b4fe', backgroundColor: '#ffffff' }}>
+                  <div className="d-flex align-items-center mb-2">
+                    <LucideIcon name="briefcase" className="me-2 flex-shrink-0" style={{ color: '#9333ea', width: '18px', height: '18px' }} />
+                    <span className="fw-bold" style={{ color: '#9333ea', fontSize: '14px' }}>Available on the next plan</span>
+                  </div>
+                  <p className="text-muted mb-3" style={{ fontSize: '13px', lineHeight: 1.4 }}>
+                    Upgrade your plan to create more workspaces and collaborate with your team.
+                  </p>
+                  <button
+                    className="btn btn-sm text-white fw-bold px-3 py-2"
+                    onClick={() => navigate('/pricing')}
+                    style={{ backgroundColor: '#a855f7', borderRadius: '8px' }}
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
               ) : (
                 <div className="mb-3">
                   <label className="form-label small fw-bold text-muted mb-2 tracking-wide">FOLDER NAME</label>
@@ -359,15 +408,19 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
 
           {/* Footer */}
           <div className="modal-footer border-0 p-4 pt-0">
-            <button type="button" className="btn btn-link text-muted text-decoration-none fw-500 fs-14px" onClick={onClose}>Cancel</button>
-            <button
-              className={`btn btn-primary px-4 fw-bold shadow-sm ${!isFormValid ? "opacity-50" : ""}`}
-              disabled={!isFormValid || isCreating}
-              onClick={handleCreate}
-              style={{ borderRadius: '10px', height: '42px', fontSize: '14px' }}
-            >
-              {isCreating ? "Creating..." : `Create ${activeTab === "Form" ? "Form" : "Folder"}`}
-            </button>
+            {!(activeTab === "Folder" && isFolderLimitReached) && (
+              <>
+                <button type="button" className="btn btn-link text-muted text-decoration-none fw-500 fs-14px" onClick={onClose}>Cancel</button>
+                <button
+                  className={`btn btn-primary px-4 fw-bold shadow-sm ${!isFormValid ? "opacity-50" : ""}`}
+                  disabled={!isFormValid || isCreating}
+                  onClick={handleCreate}
+                  style={{ borderRadius: '10px', height: '42px', fontSize: '14px' }}
+                >
+                  {isCreating ? "Creating..." : `Create ${activeTab === "Form" ? "Form" : "Folder"}`}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

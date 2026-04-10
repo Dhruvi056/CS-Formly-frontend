@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import FormDetails from "../components/FormDetails.jsx";
 import Sidebar from "../components/Sidebar.jsx";
 import toast from "react-hot-toast";
 import AdminUsersTable from "../components/AdminUsersTable.jsx";
 import AdminFormsTable from "../components/AdminFormsTable.jsx";
+import Pricing from "./Pricing.jsx";
 
 export default function Home() {
   const { formId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPricingRoute = location.pathname === "/pricing";
   const [selectedForm, setSelectedForm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -263,6 +266,8 @@ export default function Home() {
     setShowProfileView(true);
     setSelectedForm(null);
     if (userMeta?.role === "super_admin") setSuperAdminSection("dashboard");
+    // Ensure we leave /forms/:id route; otherwise form loader can switch view back.
+    navigate("/", { replace: true });
   };
 
   const openEditProfile = () => {
@@ -331,15 +336,42 @@ export default function Home() {
       if (isPhoto) setIsUploadingPhoto(true);
       else setIsUploadingCover(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
+      // Preferred: direct-to-Spaces upload (lowest server load)
+      let finalUrl = "";
+      try {
+        const presignRes = await fetch("/api/uploads/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "profile",
+            fileName: file.name,
+            contentType: file.type || "application/octet-stream",
+          }),
+        });
+        const presignData = await presignRes.json().catch(() => ({}));
+        if (!presignRes.ok || !presignData.uploadUrl || !presignData.url) {
+          throw new Error(presignData.error || "Presign failed");
+        }
 
-      const response = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!response.ok) throw new Error("Upload failed");
+        const putRes = await fetch(presignData.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error("Direct upload failed");
+        finalUrl = presignData.url;
+      } catch {
+        // Fallback: old endpoint (server uploads the file)
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!response.ok) throw new Error("Upload failed");
+        const data = await response.json();
+        finalUrl = data.url;
+      }
 
-      const data = await response.json();
-      if (isPhoto) setEditPhotoURL(data.url);
-      else setEditCoverURL(data.url);
+      if (isPhoto) setEditPhotoURL(finalUrl);
+      else setEditCoverURL(finalUrl);
       toast.success(`${type} uploaded!`, { icon: "📸" });
     } catch (err) {
       toast.error(`${type} upload failed.`);
@@ -362,7 +394,8 @@ export default function Home() {
         photoURL: editPhotoURL,
         coverURL: editCoverURL,
       });
-      setShowEditProfile(false);
+      // After save, always return to profile view.
+      openProfileView();
       toast.success("Profile updated successfully.");
     } catch (err) {
       toast.error("Profile update failed.");
@@ -400,17 +433,25 @@ export default function Home() {
                 />
               </div>
             </form>
+
             <ul className="navbar-nav ms-auto flex-row align-items-center">
+              {userMeta?.role !== "super_admin" && (
+                <li className="nav-item me-2 me-md-3">
+                  <Link
+                    to="/pricing"
+                    className="btn btn-sm btn-outline-primary rounded-pill px-2 px-md-3 fw-semibold text-decoration-none"
+                  >
+                    <span className="d-none d-sm-inline">Upgrade plan</span>
+                    <span className="d-sm-none">Upgrade</span>
+                  </Link>
+                </li>
+              )}
               <li className="nav-item me-3">
                 <button className="nav-link p-0 d-flex align-items-center border-0 bg-transparent shadow-none" title="Messages" type="button">
                   <LucideIcon name="mail" className="icon-md" />
                 </button>
               </li>
-              <li className="nav-item me-3 d-none d-md-block">
-                <button className="nav-link p-0 border-0 bg-transparent shadow-none" onClick={() => toggleTheme()} type="button">
-                  <LucideIcon name={theme === 'light' ? "moon" : "sun"} className="icon-md" />
-                </button>
-              </li>
+
               <li className="nav-item me-3 dropdown px-0" style={{ position: 'relative' }}>
                 <button className="nav-link position-relative p-0 d-flex align-items-center border-0 bg-transparent shadow-none" onClick={handleNotificationBellClick} type="button">
                   <LucideIcon name="bell" className="icon-md" />
@@ -473,8 +514,6 @@ export default function Home() {
                         top: '50px',
                         right: '0',
                         width: '280px',
-                        maxHeight: 'calc(100vh - 90px)',
-                        overflowY: 'auto',
                         zIndex: 1100,
                         backgroundColor: 'var(--bs-body-bg)',
                         borderRadius: '12px'
@@ -534,6 +573,8 @@ export default function Home() {
             <div className="d-flex align-items-center justify-content-center h-100 py-5">
               <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
             </div>
+          ) : isPricingRoute ? (
+            <Pricing />
           ) : showProfileView ? (
             <div className="py-3">
               <div className="row">
@@ -719,12 +760,12 @@ export default function Home() {
                           <h2 className="mb-0">{metricsLoading ? "..." : superAdminMetrics.forms}</h2>
                         </div>
                       </div>
-                      <div className="col-md-4">
+                      {/* <div className="col-md-4">
                         <div className="card shadow-sm border-0 p-4">
                           <h6 className="text-muted small text-uppercase fw-bold">Total Folders</h6>
                           <h2 className="mb-0">{metricsLoading ? "..." : superAdminMetrics.folders}</h2>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 )
