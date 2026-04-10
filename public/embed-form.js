@@ -59,13 +59,21 @@
   async function handleSubmit(e) {
     const form = e.target;
 
-    const formId = form.getAttribute("data-form-id");
-    if (!formId) return;
+    // Support both data-form-id and action=".../api/forms/<id>"
+    let formId = form.getAttribute("data-form-id");
+    let endpoint;
+    if (!formId) {
+      const action = form.getAttribute("action") || "";
+      const match = action.match(/\/api\/forms\/([a-f0-9]{24})/i);
+      if (!match) return;
+      formId = match[1];
+      endpoint = action; // use full URL from action
+    } else {
+      endpoint = `${BASE_URL}/api/forms/${formId}`;
+    }
 
     e.preventDefault();
     e.stopPropagation();
-
-    const endpoint = `${BASE_URL}/api/forms/${formId}`;
 
     const submitBtn = form.querySelector("[type=submit]");
     if (submitBtn && !submitBtn.dataset.originalText) {
@@ -146,10 +154,14 @@
       let ok = res.ok;
       try {
         const json = await res.json();
-        msg = json.message || msg;
-      } catch (_) {}
+        if (json.code === "SUBMISSION_LIMIT_REACHED") {
+          msg = `⚠️ Submission limit reached (${json.limit} submissions). Please contact the site owner.`;
+        } else {
+          msg = json.message || (ok ? msg : "Submission failed. Please try again.");
+        }
+      } catch (_) { }
 
-      showToast(ok ? msg : "Submission failed", ok);
+      showToast(ok ? msg : msg, ok);
 
       if (ok) form.reset();
 
@@ -162,8 +174,11 @@
   function attachToForm(form) {
     if (FORMS_ATTACHED.has(form)) return;
 
+    // Accept forms with data-form-id OR action pointing to our /api/forms/ endpoint
     const formId = form.getAttribute("data-form-id");
-    if (!formId) return;
+    const action = form.getAttribute("action") || "";
+    const hasActionEndpoint = /\/api\/forms\/[a-f0-9]{24}/i.test(action);
+    if (!formId && !hasActionEndpoint) return;
 
     form.addEventListener("submit", handleSubmit, { capture: true });
     FORMS_ATTACHED.add(form);
