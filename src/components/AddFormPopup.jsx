@@ -202,7 +202,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
   const navigate = useNavigate();
 
   const plan = userMeta?.subscriptionPlan || "free";
-  const maxFolders = plan === "free" ? 2 : plan === "pro" ? 5 : 999;
+  const maxFolders = plan === "free" ? 2 : (plan === "pro" ? 5 : 9999);
   const isFolderLimitReached = folders.length >= maxFolders;
 
   const LucideIcon = ({ name, className = "" }) => {
@@ -245,7 +245,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
       }
     };
     fetchFolders();
-  }, [currentUser]);
+  }, [currentUser, userMeta?.role]);
 
   const handleCreate = async () => {
     if (isCreating || !isFormValid) return;

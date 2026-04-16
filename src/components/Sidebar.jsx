@@ -5,6 +5,17 @@ import { useNavigate } from "react-router-dom";
 import AddFormPopup from "./AddFormPopup.jsx";
 import { normalizeMongoId } from "../utils/mongoIds.js";
 
+function formatBytes(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  const v = Number(n);
+  const GB = 1024 * 1024 * 1024;
+  const MB = 1024 * 1024;
+  if (v >= GB) return `${(v / GB).toFixed(1)} GB`;
+  if (v >= MB) return `${(v / MB).toFixed(1)} MB`;
+  if (v >= 1024) return `${(v / 1024).toFixed(1)} KB`;
+  return `${Math.round(v)} B`;
+}
+
 export default function Sidebar({
   onSelectForm,
   selectedForm,
@@ -27,6 +38,44 @@ export default function Sidebar({
   const { addToast } = useToast();
   const latestByFormRef = useRef({});
   const hasSeededLatestRef = useRef(false);
+
+  // Keep usage cards (submissions/storage/forms) fresh without manual refresh.
+  useEffect(() => {
+    if (!currentUser) return;
+    if (userMeta?.role === "super_admin") return;
+
+    let cancelled = false;
+
+    const fetchUsage = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        const usageRes = await fetch("/api/billing/usage", { headers });
+        if (!usageRes.ok) return;
+        const usageJson = await usageRes.json();
+        if (!cancelled) setUsageData(usageJson);
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchUsage();
+    const intervalId = setInterval(fetchUsage, 5000);
+    const onFocus = () => fetchUsage();
+    const onVisible = () => {
+      if (!document.hidden) fetchUsage();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [currentUser, userMeta?.role, sidebarRefreshKey]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,21 +121,14 @@ export default function Sidebar({
           setFolders(myFolders.map(f => ({ ...f, id: f._id })));
         }
 
-        // Fetch usage stats for submission limit bar
-        if (userMeta?.role !== "super_admin") {
-          const usageRes = await fetch("/api/billing/usage", { headers });
-          if (usageRes.ok) {
-            const usageJson = await usageRes.json();
-            setUsageData(usageJson);
-          }
-        }
+        // Usage stats are fetched on an interval (see effect above)
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       }
     };
 
     fetchData();
-  }, [currentUser, listsRefresh, sidebarRefreshKey]);
+  }, [currentUser, listsRefresh, sidebarRefreshKey, userMeta?.role]);
 
   // --- MongoDB: New submission notifications (polling) ---
   useEffect(() => {
@@ -295,29 +337,44 @@ export default function Sidebar({
             </li>
           )}
 
-          {(!userMeta?.subscriptionPlan || userMeta?.subscriptionPlan === "free") && !isSuperAdmin && (forms.length >= 5 || folders.length >= 2) && (
-            <li className="nav-item px-auto mt-1 mb-2">
-              <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div className="d-flex align-items-center fw-bold" style={{ fontSize: "14px", color: '#ff3366' }}>
-                  <LucideIcon name="alert-triangle" className="icon-sm me-2 flex-shrink-0" style={{ width: '18px', height: '18px', color: '#ff3366' }} />
-                  You're on the trial plan
+          {(!isSuperAdmin && usageData && (userMeta?.subscriptionPlan || "free") !== "business") && (() => {
+            const limits = usageData.limits;
+            const atFormLimit = limits.maxForms && forms.length >= limits.maxForms;
+            const atFolderLimit = limits.maxFolders && folders.length >= limits.maxFolders;
+
+            if (!atFormLimit && !atFolderLimit) return null;
+
+            const plan = userMeta?.subscriptionPlan || "free";
+            const nextPlan = plan === "free" ? "Pro" : (plan === "pro" ? "Business" : null);
+
+            return (
+              <li className="nav-item px-auto mt-1 mb-2">
+                <div className="p-2 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div className="d-flex align-items-center fw-bold" style={{ fontSize: "14px", color: '#ff3366' }}>
+                    <LucideIcon name="alert-triangle" className="icon-sm me-2 flex-shrink-0" style={{ width: '13px', height: '18px', color: '#ff3366' }} />
+                    {atFormLimit && atFolderLimit ? "Plan limits reached" : atFormLimit ? "Form limit reached" : "Folder limit reached"}
+                  </div>
+                  <p className="text-muted mb-0" style={{ fontSize: "12px", lineHeight: "1.4", color: '#4d5969' }}>
+                    {nextPlan
+                      ? `Upgrade to the ${nextPlan} plan to create more forms and folders.`
+                      : "You have reached the maximum limits for your account."}
+                  </p>
+                  {nextPlan && (
+                    <button
+                      className="btn btn-link  fw-bold text-decoration-none text-start p-0"
+                      style={{ fontSize: "12px", color: '#6571ff' }}
+                      onClick={() => navigate('/pricing')}
+                    >
+                      Upgrade Now
+                    </button>
+                  )}
                 </div>
-                <p className="text-muted mb-0" style={{ fontSize: "13.5px", lineHeight: "1.4", color: '#4d5969' }}>
-                  Upgrade to Pro plan to use Formly with full features.
-                </p>
-                <button
-                  className="btn btn-link p-0 fw-bold text-decoration-none text-start mt-1"
-                  style={{ fontSize: "14px", color: '#6571ff' }}
-                  onClick={() => navigate('/pricing')}
-                >
-                  Upgrade
-                </button>
-              </div>
-            </li>
-          )}
+              </li>
+            );
+          })()}
 
           {/* Submission Usage Bar — shown for free plan users */}
-          {!isSuperAdmin && (!userMeta?.subscriptionPlan || userMeta?.subscriptionPlan === "free") && usageData && (() => {
+          {!isSuperAdmin && usageData && (() => {
             const used = usageData.usage?.submissions ?? 0;
             const max = usageData.limits?.maxSubmissions ?? 50;
             const pct = Math.min(100, Math.round((used / max) * 100));
@@ -354,6 +411,53 @@ export default function Sidebar({
                   ) : isNearLimit ? (
                     <p className="mb-0" style={{ fontSize: '12px', color: '#f97316' }}>
                       Approaching limit — upgrade soon.
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })()}
+
+          {/* Storage Usage Bar — shown for plans with storage caps */}
+          {!isSuperAdmin && usageData && usageData.limits?.maxStorageBytes != null && (() => {
+            const used = usageData.usage?.storageBytes ?? 0;
+            const max = usageData.limits?.maxStorageBytes ?? 0;
+            const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
+            const isAtLimit = max > 0 && used >= max;
+            const isNearLimit = pct >= 80 && !isAtLimit;
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+
+            return (
+              <li className="nav-item px-auto mt-1 mb-2">
+                <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: isAtLimit ? '#fca5a5' : '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div className="d-flex flex-column" style={{ fontWeight: 600, color: isAtLimit ? '#ef4444' : '#4d5969' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', fontSize: '12.5px' }}>
+                      <LucideIcon name={isAtLimit ? 'alert-circle' : 'hard-drive'} className="icon-sm flex-shrink-0" />
+                      File storage
+                    </span>
+                    <span style={{ marginTop: '2px', fontSize: '11.5px', fontWeight: 500, color: isAtLimit ? '#ef4444' : '#7987a1' }}>
+                      {formatBytes(used)} / {formatBytes(max)}
+                    </span>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '99px', background: '#e9ecef', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                  </div>
+                  {isAtLimit ? (
+                    <>
+                      <p className="mb-0" style={{ fontSize: '12.5px', color: '#ef4444', fontWeight: 500 }}>
+                        Storage limit reached. New file uploads are blocked.
+                      </p>
+                      <button
+                        className="btn btn-link p-0 fw-bold text-decoration-none text-start"
+                        style={{ fontSize: '13px', color: '#6571ff' }}
+                        onClick={() => navigate('/pricing')}
+                      >
+                        Upgrade plan →
+                      </button>
+                    </>
+                  ) : isNearLimit ? (
+                    <p className="mb-0" style={{ fontSize: '12px', color: '#f97316' }}>
+                      Approaching storage limit — upgrade soon.
                     </p>
                   ) : null}
                 </div>
