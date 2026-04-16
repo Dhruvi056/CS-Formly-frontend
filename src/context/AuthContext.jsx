@@ -173,6 +173,39 @@ export function AuthProvider({ children }) {
     }
   }
 
+  /**
+   * Refetches the user profile from the backend to sync state.
+   */
+  async function refreshProfile() {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      const response = await fetch("/api/auth/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+        }
+        throw new Error("Failed to refresh profile");
+      }
+
+      const data = await response.json();
+      const merged = {
+        ...(JSON.parse(localStorage.getItem("authUser") || "{}")),
+        ...data,
+      };
+      localStorage.setItem("authUser", JSON.stringify(merged));
+      updateAuthState(merged);
+      return data;
+    } catch (err) {
+      console.error("Profile refresh failed:", err);
+      throw err;
+    }
+  }
+
   // --- HELPERS ---
 
   const storeSession = (data) => {
@@ -195,6 +228,7 @@ export function AuthProvider({ children }) {
       name: fullName,
       email: data.email,
       role: data.role,
+      subscriptionPlan: data.subscriptionPlan || "free",
       vendorId: data.id || data.uid,
       photoURL: data.photoURL || data.profileImage || "",
       coverURL: data.coverURL || data.coverImage || "",
@@ -238,6 +272,7 @@ export function AuthProvider({ children }) {
     logout,
     resetPassword,
     updateUserMeta,
+    refreshProfile,
   };
 
   return (

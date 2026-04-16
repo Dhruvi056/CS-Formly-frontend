@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import FormDetails from "../components/FormDetails.jsx";
 import Sidebar from "../components/Sidebar.jsx";
+import AddFormPopup from "../components/AddFormPopup.jsx";
 import toast from "react-hot-toast";
 import AdminUsersTable from "../components/AdminUsersTable.jsx";
 import AdminFormsTable from "../components/AdminFormsTable.jsx";
@@ -13,10 +14,10 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const isPricingRoute = location.pathname === "/pricing";
+  
   const [selectedForm, setSelectedForm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showProfileView, setShowProfileView] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
@@ -30,7 +31,11 @@ export default function Home() {
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [superAdminSection, setSuperAdminSection] = useState("dashboard");
+  const [superAdminSection, setSuperAdminSection] = useState(() => {
+    if (location.pathname === "/admin/users") return "users";
+    if (location.pathname === "/admin/forms") return "forms";
+    return "dashboard";
+  });
   const [superAdminMetrics, setSuperAdminMetrics] = useState({
     users: 0,
     folders: 0,
@@ -43,6 +48,7 @@ export default function Home() {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+  const [showCreatePopup, setShowCreatePopup] = useState(false);
   const photoInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const clearBeforeMsRef = useRef(0);
@@ -132,6 +138,29 @@ export default function Home() {
     };
   }, [currentUser, selectedForm?.formId]);
 
+  // --- SYNC ROUTE STATE ---
+  const [showProfileView, setShowProfileView] = useState(location.pathname === "/profile");
+
+  useEffect(() => {
+    if (location.pathname === "/profile") {
+      setShowProfileView(true);
+      setSelectedForm(null);
+    } else if (location.pathname.startsWith("/admin")) {
+      setShowProfileView(false);
+      setSelectedForm(null);
+      if (location.pathname === "/admin/users") setSuperAdminSection("users");
+      else if (location.pathname === "/admin/forms") setSuperAdminSection("forms");
+      else setSuperAdminSection("dashboard");
+    } else if (location.pathname.startsWith("/forms")) {
+      setShowProfileView(false);
+      // selectedForm will be loaded by the form-id effect below
+    } else if (location.pathname === "/") {
+      setShowProfileView(false);
+      setSelectedForm(null);
+      if (userMeta?.role === "super_admin") setSuperAdminSection("dashboard");
+    }
+  }, [location.pathname, userMeta?.role]);
+
   // --- MONGODB MIGRATION: Fetching Dashboard Metrics ---
   useEffect(() => {
     if (!currentUser || userMeta?.role !== "super_admin") {
@@ -220,7 +249,7 @@ export default function Home() {
     setShowNotificationMenu(true);
   };
 
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [theme] = useState(localStorage.getItem("theme") || "light");
   useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
     localStorage.setItem('theme', theme);
@@ -234,10 +263,6 @@ export default function Home() {
       setEditLastName(parts.join(" ") || "");
     }
   }, [userMeta, showEditProfile]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
 
   const profileName = userMeta?.name || "User";
   const profileEmail = userMeta?.email || currentUser?.email || "";
@@ -263,11 +288,7 @@ export default function Home() {
   const openProfileView = () => {
     setShowProfileMenu(false);
     setShowEditProfile(false);
-    setShowProfileView(true);
-    setSelectedForm(null);
-    if (userMeta?.role === "super_admin") setSuperAdminSection("dashboard");
-    // Ensure we leave /forms/:id route; otherwise form loader can switch view back.
-    navigate("/", { replace: true });
+    navigate("/profile");
   };
 
   const openEditProfile = () => {
@@ -313,16 +334,19 @@ export default function Home() {
 
   const handleFormUpdated = (updates) => {
     setSelectedForm((prev) => (prev ? { ...prev, ...updates } : null));
-    if (updates && Object.prototype.hasOwnProperty.call(updates, "folderId")) {
+    if (updates && (
+      Object.prototype.hasOwnProperty.call(updates, "folderId") || 
+      Object.prototype.hasOwnProperty.call(updates, "name") ||
+      updates.refreshUsage === true
+    )) {
       setSidebarRefreshKey((k) => k + 1);
     }
   };
 
   const handleSelectAdminSection = (section) => {
-    setShowProfileView(false);
-    setSelectedForm(null);
-    setSuperAdminSection(section);
-    navigate("/", { replace: true });
+    if (section === "users") navigate("/admin/users");
+    else if (section === "forms") navigate("/admin/forms");
+    else navigate("/admin");
   };
 
   const handleImageUpload = async (file, type) => {
@@ -533,6 +557,12 @@ export default function Home() {
                         >
                           {profileRoleLabel}
                         </div>
+                        <div
+                          className="badge bg-success-subtle text-success mt-1 px-3 rounded-pill text-uppercase"
+                          style={{ fontSize: '10px', letterSpacing: '0.5px' }}
+                        >
+                          {userMeta?.subscriptionPlan || "FREE"} PLAN
+                        </div>
                       </div>
                       <div className="p-2">
                         <button className="dropdown-item py-2 px-3 rounded d-flex align-items-center border-0 bg-transparent w-100 mb-1" onClick={() => openProfileView()} type="button">
@@ -609,7 +639,7 @@ export default function Home() {
                           <div className="ms-3">
                             <div className="d-flex align-items-center gap-2 flex-wrap">
                               <span
-                                className="h4 mb-0 text-white fw-bold"
+                                className="h4 mb-0 text-black fw-bold"
                                 style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
                               >
                                 {profileName}
@@ -618,7 +648,7 @@ export default function Home() {
                                 {profileRoleLabel}
                               </span>
                             </div>
-                            <div className="small text-white-50" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}>
+                            <div className="small text-black-50" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}>
                               {profileEmail}
                             </div>
                           </div>
@@ -769,11 +799,61 @@ export default function Home() {
                     </div>
                   </div>
                 )
+          ) : !selectedForm ? (
+            <div className="d-flex justify-content-center align-items-center py-4" style={{ minHeight: "68vh" }}>
+              <div
+                className="bg-white"
+                style={{
+                  width: "100%",
+                  maxWidth: 430,
+                  borderRadius: 10,
+                  padding: "1.5rem",
+                }}
+              >
+                <h2 className="fw-bold mb-3" style={{ fontSize: "2rem", letterSpacing: "0.02em" }}>
+                  CS <span style={{ color: "#6571ff" }}>Formly</span>
+                </h2>
+                <div className="list-group list-group-flush">
+                  <button
+                    type="button"
+                    className="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 border-0"
+                    onClick={() => setShowCreatePopup(true)}
+                  >
+                    <LucideIcon name="external-link" className="icon-sm text-secondary" />
+                    <span>New form</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 border-0"
+                    onClick={() => navigate("/profile")}
+                  >
+                    <LucideIcon name="user-circle-2" className="icon-sm text-secondary" />
+                    <span>Account</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 border-0"
+                    onClick={() => navigate("/pricing")}
+                  >
+                    <LucideIcon name="crown" className="icon-sm text-secondary" />
+                    <span>Upgrade plan</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             <FormDetails form={selectedForm} onFormUpdated={handleFormUpdated} searchQuery={globalSearchQuery} />
           )}
         </div>
       </div>
+
+      {showCreatePopup && (
+        <AddFormPopup
+          onClose={() => setShowCreatePopup(false)}
+          onSelectForm={handleSelectForm}
+          onCreated={() => setSidebarRefreshKey((k) => k + 1)}
+        />
+      )}
 
       {/* Edit Profile Modal */}
       {showEditProfile && (
