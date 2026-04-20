@@ -4,10 +4,12 @@
   import { useAuth } from "../context/AuthContext";
   import "../styles/Pricing.css";
 
+const FREE_STORAGE_BYTES = 1024 * 1024 * 1024;
+
   const FREE_FEATURES = [
     "5 Forms",
     "50 Submissions",
-    "1 MB File Storage",
+    "1 GB File Storage",
     "Email Notifications",
     "File Upload",
     "Redirections",
@@ -98,6 +100,12 @@
     const completedSessionRef = useRef(new Set());
 
     const current = userMeta?.subscriptionPlan || (userMeta ? "free" : null);
+    const effectiveUsageMaxStorage =
+      usageSnap?.limits?.maxStorageBytes == null
+        ? null
+        : (current || "free").toLowerCase() === "free"
+          ? Math.max(usageSnap.limits.maxStorageBytes, FREE_STORAGE_BYTES)
+          : usageSnap.limits.maxStorageBytes;
 
     useEffect(() => {
       const token = localStorage.getItem("authToken");
@@ -208,7 +216,7 @@
                     ? ` / ${usageSnap.limits.maxSubmissions.toLocaleString()}`
                     : ""}{" "}
                   submissions · {formatBytes(usageSnap.usage.storageBytes)}
-                  {usageSnap.limits.maxStorageBytes != null ? ` / ${formatBytes(usageSnap.limits.maxStorageBytes)}` : ""} storage ·{" "}
+                  {effectiveUsageMaxStorage != null ? ` / ${formatBytes(effectiveUsageMaxStorage)}` : ""} storage ·{" "}
                   {usageSnap.usage.folders}
                   {usageSnap.limits.maxFolders != null ? ` / ${usageSnap.limits.maxFolders}` : ""} folders
                 </p>
