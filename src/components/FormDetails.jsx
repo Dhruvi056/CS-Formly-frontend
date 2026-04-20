@@ -73,6 +73,58 @@ function getFileLinks(fieldName, value) {
   });
 }
 
+// ── Helper: Format complex values for display ──────────────────────────────
+function renderFieldValue(val) {
+  if (val == null || val === "") return "-";
+  if (typeof val === "object") {
+    if (Array.isArray(val)) {
+      return val.map(v => typeof v === "object" ? JSON.stringify(v) : String(v)).join(", ");
+    }
+    try {
+      const entries = Object.entries(val);
+      if (entries.length > 0) {
+        return entries
+          .map(([k, v]) => {
+            const vStr = typeof v === "object" ? JSON.stringify(v) : v;
+            return `${k}: ${vStr}`;
+          })
+          .join(", ");
+      }
+      return JSON.stringify(val);
+    } catch (e) {
+      return String(val);
+    }
+  }
+  return String(val);
+}
+
+function parseJsonSafe(value) {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeSubmissionData(rawData) {
+  if (!rawData || typeof rawData !== "object" || Array.isArray(rawData)) {
+    return {};
+  }
+
+  const next = { ...rawData };
+  const payload = parseJsonSafe(next.payload);
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const payloadData = parseJsonSafe(payload.data);
+    if (payloadData && typeof payloadData === "object" && !Array.isArray(payloadData)) {
+      return payloadData;
+    }
+  }
+
+  return next;
+}
+
 // ── Helper: get first letter initial from email ──────────────────────────────
 function getEmailInitial(email) {
   if (!email) return "?";
@@ -343,8 +395,17 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     );
   };
 
+  const normalizedSubmissions = useMemo(
+    () =>
+      submissions.map((s) => ({
+        ...s,
+        data: normalizeSubmissionData(s.data),
+      })),
+    [submissions]
+  );
+
   const allFields = new Set();
-  submissions.forEach((s) => {
+  normalizedSubmissions.forEach((s) => {
     if (s.data) Object.keys(s.data).forEach((f) => allFields.add(f));
   });
   const fields = Array.from(allFields).filter((f) => f !== "_gotcha");
@@ -373,15 +434,16 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   };
 
   const filteredSubmissions = useMemo(() => {
-    if (!searchQuery) return submissions;
+    if (!searchQuery) return normalizedSubmissions;
     const s = searchQuery.toLowerCase();
-    return submissions.filter((sub) => {
+    return normalizedSubmissions.filter((sub) => {
       const matchInFields = fields.some((f) =>
         String(sub.data?.[f] || "").toLowerCase().includes(s)
       );
       return matchInFields || sub.submittedAt.toLowerCase().includes(s);
     });
-  }, [submissions, searchQuery, fields]);
+  }, [normalizedSubmissions, searchQuery, fields]);
+console.log('filteredSubmissions',filteredSubmissions);
 
   const ownerEmail = userMeta?.email || currentUser?.email || "";
   const ownerInitial = getEmailInitial(ownerEmail);
@@ -609,7 +671,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                   )}
                                 </div>
                               ) : (
-                                String(val || "-")
+                                renderFieldValue(val)
                               )}
                             </td>
                           );
@@ -707,7 +769,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                 ))}
                               </div>
                             ) : (
-                              <div className="small">{String(val || "—")}</div>
+                              <div className="small">{renderFieldValue(val) || "—"}</div>
                             )}
                           </div>
                         </div>

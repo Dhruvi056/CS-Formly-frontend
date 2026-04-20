@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import AddFormPopup from "./AddFormPopup.jsx";
 import { normalizeMongoId } from "../utils/mongoIds.js";
 
+const FREE_STORAGE_BYTES = 1024 * 1024 * 1024;
+
 function formatBytes(n) {
   if (n == null || Number.isNaN(Number(n))) return "—";
   const v = Number(n);
@@ -421,7 +423,9 @@ export default function Sidebar({
           {/* Storage Usage Bar — shown for plans with storage caps */}
           {!isSuperAdmin && usageData && usageData.limits?.maxStorageBytes != null && (() => {
             const used = usageData.usage?.storageBytes ?? 0;
-            const max = usageData.limits?.maxStorageBytes ?? 0;
+            const plan = (userMeta?.subscriptionPlan || "free").toLowerCase();
+            const apiMax = usageData.limits?.maxStorageBytes ?? 0;
+            const max = plan === "free" ? Math.max(apiMax, FREE_STORAGE_BYTES) : apiMax;
             const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
             const isAtLimit = max > 0 && used >= max;
             const isNearLimit = pct >= 80 && !isAtLimit;
