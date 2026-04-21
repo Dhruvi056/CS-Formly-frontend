@@ -42,6 +42,16 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // --- SESSION / STATE SYNC ---
+  // Single place to merge server profile/session into localStorage + React state.
+  const applyAuthUpdate = (partial) => {
+    const prev = JSON.parse(localStorage.getItem("authUser") || "{}");
+    const merged = { ...prev, ...(partial || {}) };
+    localStorage.setItem("authUser", JSON.stringify(merged));
+    updateAuthState(merged);
+    return merged;
+  };
+
   // --- AUTH FUNCTIONS ---
 
   /**
@@ -160,13 +170,7 @@ export function AuthProvider({ children }) {
       if (!response.ok) {
         throw new Error(result.message || "Profile update failed");
       }
-
-      const merged = {
-        ...(JSON.parse(localStorage.getItem("authUser") || "{}")),
-        ...result,
-      };
-      localStorage.setItem("authUser", JSON.stringify(merged));
-      updateAuthState(merged);
+      applyAuthUpdate(result);
     } catch (err) {
       console.error("Profile update failed:", err);
       throw err;
@@ -193,12 +197,7 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      const merged = {
-        ...(JSON.parse(localStorage.getItem("authUser") || "{}")),
-        ...data,
-      };
-      localStorage.setItem("authUser", JSON.stringify(merged));
-      updateAuthState(merged);
+      applyAuthUpdate(data);
       return data;
     } catch (err) {
       console.error("Profile refresh failed:", err);
@@ -273,6 +272,7 @@ export function AuthProvider({ children }) {
     resetPassword,
     updateUserMeta,
     refreshProfile,
+    applyAuthUpdate,
   };
 
   return (

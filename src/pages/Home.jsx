@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import AdminUsersTable from "../components/AdminUsersTable.jsx";
 import AdminFormsTable from "../components/AdminFormsTable.jsx";
 import Pricing from "./Pricing.jsx";
+import SuperAdminDashboard from "../components/SuperAdminDashboard.jsx";
 
 export default function Home() {
   const { formId } = useParams();
@@ -40,6 +41,9 @@ export default function Home() {
     users: 0,
     folders: 0,
     forms: 0,
+    plans: { total: 0, counts: { free: 0, pro: 0, business: 0 } },
+    usersByPlan: { free: [], pro: [], business: [] },
+    signupSeries: [],
   });
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [clearNotificationsToken, setClearNotificationsToken] = useState(0);
@@ -269,6 +273,10 @@ export default function Home() {
   const profileAvatarSrc = userMeta?.photoURL || currentUser?.photoURL || "";
   const profileCoverSrc = userMeta?.coverURL || "";
   const profileRoleLabel = (userMeta?.role || "vendor_admin").replace(/_/g, " ").toUpperCase();
+  const profilePlanLabel = String(userMeta?.subscriptionPlan || "free").toUpperCase();
+  const planLower = String(userMeta?.subscriptionPlan || "free").toLowerCase();
+  const upgradeNavLabel =
+    planLower === "business" ? "Business" : `Upgrade plan · ${profilePlanLabel}`;
 
   const initials = profileName
     .split(" ")
@@ -465,7 +473,7 @@ export default function Home() {
                     to="/pricing"
                     className="btn btn-sm btn-outline-primary rounded-pill px-2 px-md-3 fw-semibold text-decoration-none"
                   >
-                    <span className="d-none d-sm-inline">Upgrade plan</span>
+                    <span className="d-none d-sm-inline">{upgradeNavLabel}</span>
                     <span className="d-sm-none">Upgrade</span>
                   </Link>
                 </li>
@@ -534,13 +542,17 @@ export default function Home() {
                     <div
                       className="dropdown-menu show dropdown-menu-end p-0 shadow-lg border-0 animate-fadeIn"
                       style={{
-                        position: 'absolute',
+                        position: 'fixed',
                         top: '50px',
-                        right: '0',
+                        right: '8px',
                         width: '280px',
+                        maxWidth: 'calc(100vw - 16px)',
                         zIndex: 1100,
-                        backgroundColor: 'var(--bs-body-bg)',
-                        borderRadius: '12px'
+                        backgroundColor: "var(--bs-body-bg)",
+                        borderRadius: "12px",
+                        border: "1px solid var(--bs-border-color)",
+                        overflow: "hidden",
+                        opacity: 1
                       }}
                     >
                       <div className="p-4 border-bottom text-center bg-body-tertiary rounded-top">
@@ -557,12 +569,14 @@ export default function Home() {
                         >
                           {profileRoleLabel}
                         </div>
-                        <div
-                          className="badge bg-success-subtle text-success mt-1 px-3 rounded-pill text-uppercase"
-                          style={{ fontSize: '10px', letterSpacing: '0.5px' }}
-                        >
-                          {userMeta?.subscriptionPlan || "FREE"} PLAN
-                        </div>
+                        {userMeta?.role !== "super_admin" && (
+                          <div
+                            className="badge bg-success-subtle text-success mt-1 px-3 rounded-pill text-uppercase"
+                            style={{ fontSize: "10px", letterSpacing: "0.5px" }}
+                          >
+                            {profilePlanLabel}
+                          </div>
+                        )}
                       </div>
                       <div className="p-2">
                         <button className="dropdown-item py-2 px-3 rounded d-flex align-items-center border-0 bg-transparent w-100 mb-1" onClick={() => openProfileView()} type="button">
@@ -775,29 +789,12 @@ export default function Home() {
             superAdminSection === "users" ? <AdminUsersTable searchQuery={globalSearchQuery} /> :
               superAdminSection === "forms" ? <AdminFormsTable searchQuery={globalSearchQuery} /> :
                 (
-                  <div className="py-3">
-                    <h4 className="mb-4 fw-bold">Super Admin Dashboard</h4>
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <div className="card shadow-sm border-0 p-4" onClick={() => handleSelectAdminSection("users")} style={{ cursor: 'pointer' }}>
-                          <h6 className="text-muted small text-uppercase fw-bold">Total Vendors</h6>
-                          <h2 className="mb-0">{metricsLoading ? "..." : superAdminMetrics.users}</h2>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="card shadow-sm border-0 p-4" onClick={() => handleSelectAdminSection("forms")} style={{ cursor: 'pointer' }}>
-                          <h6 className="text-muted small text-uppercase fw-bold">Total Forms</h6>
-                          <h2 className="mb-0">{metricsLoading ? "..." : superAdminMetrics.forms}</h2>
-                        </div>
-                      </div>
-                      {/* <div className="col-md-4">
-                        <div className="card shadow-sm border-0 p-4">
-                          <h6 className="text-muted small text-uppercase fw-bold">Total Folders</h6>
-                          <h2 className="mb-0">{metricsLoading ? "..." : superAdminMetrics.folders}</h2>
-                        </div>
-                      </div> */}
-                    </div>
-                  </div>
+                  <SuperAdminDashboard
+                    metrics={superAdminMetrics}
+                    loading={metricsLoading}
+                    onGoUsers={() => handleSelectAdminSection("users")}
+                    onGoForms={() => handleSelectAdminSection("forms")}
+                  />
                 )
           ) : !selectedForm ? (
             <div className="d-flex justify-content-center align-items-center py-4" style={{ minHeight: "68vh" }}>
@@ -836,7 +833,7 @@ export default function Home() {
                     onClick={() => navigate("/pricing")}
                   >
                     <LucideIcon name="crown" className="icon-sm text-secondary" />
-                    <span>Upgrade plan</span>
+                    <span>{upgradeNavLabel}</span>
                   </button>
                 </div>
               </div>
