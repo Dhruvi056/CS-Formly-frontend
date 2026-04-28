@@ -14,13 +14,7 @@ const FREE_FEATURES = [
   "File Upload",
   "Redirections",
   "Share Form",
-  "Webhooks",
-  "Slack Webhook",
-  "Discord Webhook",
   "Export CSV",
-  "Zapier",
-  "Built-in Validations",
-  "Spam Protection",
 ];
 
 const PRO_FEATURES = [
@@ -124,15 +118,18 @@ export default function Pricing() {
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
-
   useEffect(() => {
     const success = searchParams.get("success");
     const sid = searchParams.get("session_id");
     if (success !== "1" || !sid) return;
-    if (completedSessionRef.current.has(sid)) return;
-    completedSessionRef.current.add(sid);
+
+    const completedSet = completedSessionRef.current;
+
+    if (completedSet.has(sid)) return;
+    completedSet.add(sid);
 
     let cancelled = false;
+
     (async () => {
       try {
         const token = localStorage.getItem("authToken");
@@ -145,20 +142,23 @@ export default function Pricing() {
           throw new Error(data.error || "Could not confirm subscription");
         }
         if (cancelled) return;
-        // Apply updated plan immediately (no logout/login needed).
+
         applyAuthUpdate?.(data);
-        // Best-effort refresh in background (don't await to avoid delay)
-        refreshProfile().catch(() => {});
-        // update limits
-        fetch("/api/billing/usage", { headers: { Authorization: `Bearer ${token}` } })
+        refreshProfile().catch(() => { });
+
+        fetch("/api/billing/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
           .then((r) => (r.ok ? r.json() : null))
           .then((snap) => snap && setUsageSnap(snap));
 
         toast.success("Payment successful. Your plan is updated.");
+
         const next = new URLSearchParams(searchParams);
         next.delete("success");
         next.delete("session_id");
         setSearchParams(next, { replace: true });
+
       } catch (e) {
         if (!cancelled) toast.error(e.message || "Confirmation failed");
       }
@@ -166,7 +166,7 @@ export default function Pricing() {
 
     return () => {
       cancelled = true;
-      completedSessionRef.current.delete(sid);
+      completedSet.delete(sid);
     };
   }, [searchParams, setSearchParams, refreshProfile, applyAuthUpdate]);
 
@@ -206,26 +206,27 @@ export default function Pricing() {
     <div className="pricing-page pricing-noble">
       <div className="pricing-noble__content">
         <header className="pricing-noble__header">
-          <h2 className="pricing-noble__title">Choose a plan</h2>
+          <h2 className="pricing-noble__title">Choose Your Plan</h2>
           <p className="pricing-noble__subtitle">
-            Limits apply to your whole account (all forms and folders). Upgrade for higher caps. Checkout is powered by Stripe.
+            Limits apply to your entire account (forms and folders). Upgrade to increase your limits.
           </p>
 
           {usageSnap && (
             <div className="pricing-noble__usageWrap">
-              <p className="pricing-noble__usage">
-                <strong>Your usage:</strong>{" "}
-                {usageSnap.usage.forms}
-                {usageSnap.limits.maxForms != null ? ` / ${usageSnap.limits.maxForms}` : ""} forms ·{" "}
-                {usageSnap.usage.submissions.toLocaleString()}
-                {usageSnap.limits.maxSubmissions != null
-                  ? ` / ${usageSnap.limits.maxSubmissions.toLocaleString()}`
-                  : ""}{" "}
-                submissions · {formatBytes(usageSnap.usage.storageBytes)}
-                {effectiveUsageMaxStorage != null ? ` / ${formatBytes(effectiveUsageMaxStorage)}` : ""} storage ·{" "}
-                {usageSnap.usage.folders}
-                {usageSnap.limits.maxFolders != null ? ` / ${usageSnap.limits.maxFolders}` : ""} folders
-              </p>
+              <div className="pricing-noble__usage">
+                <div className="usage-stat">
+                  <strong>Forms:</strong> {usageSnap.usage.forms} / {usageSnap.limits.maxForms != null ? usageSnap.limits.maxForms : "∞"}
+                </div>
+                <div className="usage-stat">
+                  <strong>Submissions:</strong> {usageSnap.usage.submissions.toLocaleString()} / {usageSnap.limits.maxSubmissions != null ? usageSnap.limits.maxSubmissions.toLocaleString() : "∞"}
+                </div>
+                <div className="usage-stat">
+                  <strong>Storage:</strong> {formatBytes(usageSnap.usage.storageBytes)} / {effectiveUsageMaxStorage != null ? formatBytes(effectiveUsageMaxStorage) : "∞"}
+                </div>
+                <div className="usage-stat">
+                  <strong>Folders:</strong> {usageSnap.usage.folders} / {usageSnap.limits.maxFolders != null ? usageSnap.limits.maxFolders : "∞"}
+                </div>
+              </div>
             </div>
           )}
         </header>
@@ -296,7 +297,7 @@ export default function Pricing() {
                 <div className="pricing-card__cta">
                   <button
                     type="button"
-                    className="pricing-card__btn pricing-card__btn--success"
+                    className="pricing-card__btn pricing-card__btn--primary"
                     onClick={() => startCheckout("pro")}
                     disabled={checkoutLoading === "pro" || current === "pro" || current === "business"}
                   >
@@ -341,7 +342,7 @@ export default function Pricing() {
                     onClick={() => startCheckout("business")}
                     disabled={checkoutLoading === "business" || current === "business"}
                   >
-                    {checkoutLoading === "business" ? "Redirecting…" : current === "business" ? "Current plan" : "Get started"}
+                    {checkoutLoading === "business" ? "Redirecting…" : current === "business" ? "Current plan" : current === "pro" ? "Upgrade plan" : "Get started"}
                   </button>
                 </div>
 

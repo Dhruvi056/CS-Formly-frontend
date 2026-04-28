@@ -38,15 +38,7 @@ export default function Login() {
     if (loginSuccess && currentUser) {
       setLoading(false);
       toast.success("Welcome back! Logged in successfully.");
-      const lastRoute = localStorage.getItem("lastRoute");
-      const target =
-        lastRoute &&
-        lastRoute !== "/login" &&
-        lastRoute !== "/signup" &&
-        lastRoute !== "/reset-password"
-          ? lastRoute
-          : "/";
-      navigate(target, { replace: true });
+      navigate("/", { replace: true });
       setLoginSuccess(false);
     } else if (loginSuccess && !currentUser) {
       setTimeout(() => {

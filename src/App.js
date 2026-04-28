@@ -21,21 +21,11 @@ function PublicRoute({ children }) {
   // Always allow reset-password page (even if logged in) so links work
   if (location.pathname === "/reset-password") return children;
   if (!currentUser) return children;
-  const lastRoute = typeof window !== "undefined" ? localStorage.getItem("lastRoute") : null;
-  const target =
-    lastRoute &&
-    lastRoute !== "/login" &&
-    lastRoute !== "/signup" &&
-    lastRoute !== "/reset-password"
-      ? lastRoute
-      : "/";
-  return <Navigate to={target} replace />;
+  return <Navigate to="/" replace />;
 }
 
 function RoutePersist() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -43,21 +33,6 @@ function RoutePersist() {
       localStorage.setItem("lastRoute", currentPath);
     }
   }, [location]);
-
-  useEffect(() => {
-    if (currentUser) {
-      const lastRoute = localStorage.getItem("lastRoute");
-      if (lastRoute && lastRoute !== "/" && lastRoute !== "/login" && lastRoute !== "/signup") {
-        const timer = setTimeout(() => {
-          if (location.pathname === "/") {
-            navigate(lastRoute, { replace: true });
-          }
-        }, 150);
-        
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [currentUser, location.pathname, navigate]); 
 
   return null;
 }

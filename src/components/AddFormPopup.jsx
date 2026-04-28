@@ -247,6 +247,14 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
     fetchFolders();
   }, [currentUser, userMeta?.role]);
 
+  useEffect(() => {
+    const onEsc = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [onClose]);
+
   const handleCreate = async () => {
     if (isCreating || !isFormValid) return;
     const token = localStorage.getItem("authToken");
@@ -293,9 +301,14 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
     <div
       className="modal show d-block afp-create-modal"
       style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 10000 }}
+      onClick={onClose}
     >
       <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: "400px", overflow: "visible" }}>
-        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: "20px", overflow: "visible" }}>
+        <div
+          className="modal-content border-0 shadow-lg"
+          style={{ borderRadius: "20px", overflow: "visible" }}
+          onClick={(e) => e.stopPropagation()}
+        >
 
           {/* Header */}
           <div className="modal-header border-0 p-4 pb-0">
@@ -365,6 +378,11 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                       placeholder="e.g. support-request"
                       value={formName}
                       onChange={e => setFormName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        handleCreate();
+                      }}
                       style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
                     />
                   </div>
@@ -399,6 +417,11 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                     placeholder="e.g. Marketing Projects"
                     value={folderName}
                     onChange={e => setFolderName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      handleCreate();
+                    }}
                     style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
                   />
                 </div>

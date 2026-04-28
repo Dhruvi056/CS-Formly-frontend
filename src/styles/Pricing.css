@@ -1,10 +1,10 @@
-.pricing-page {
+:root {
   --pricing-text: #111827;
   --pricing-muted: #6b7280;
   --pricing-border: #e5e7eb;
   --pricing-bg: #ffffff;
   --pricing-primary: #6571ff; /* close to NobleUI demo */
-  --pricing-success: #16a34a;
+  --pricing-success: #6571ff; /* keep icons consistent when re-used */
   --pricing-danger: #ef4444;
   --pricing-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
 }
@@ -42,17 +42,26 @@
 }
 
 .pricing-noble__usage {
-  display: inline-block;
-  padding: 0.45rem 0.8rem;
-  border-radius: 999px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
   border: 1px solid var(--pricing-border);
   background: #f9fafb;
   color: var(--pricing-muted);
-  font-size: 0.84rem;
-  line-height: 1.25;
+  font-size: 0.85rem;
 }
 
-.pricing-noble__usage strong {
+.usage-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.usage-stat strong {
   color: var(--pricing-text);
 }
 
@@ -76,6 +85,9 @@
 
 .pricing-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   border: 1px solid var(--pricing-border);
   border-radius: 4px;
   background: var(--pricing-bg);
@@ -96,11 +108,19 @@
 }
 
 .pricing-card__body {
-  padding: 1rem 1rem ;
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   height: auto;
+  padding: 0.95rem 0.95rem 0.85rem;
+}
+.pricing-card__features {
+  flex: 1 1 auto;
+}
+
+.pricing-card__cta {
+  margin-top: auto;   
 }
 
 .pricing-card__name {
@@ -164,10 +184,9 @@
 .pricing-card__features {
   list-style: none;
   padding: 0;
-  margin: 0 auto;
-  width: fit-content;
+  margin: 0;
+  width: 100%;
   max-width: 100%;
-  flex: 0 0 auto;
   overflow: visible;
   padding-right: 0;
 }
@@ -203,7 +222,8 @@
 }
 
 .pricing-card__cta {
-  margin-top: 0.6rem;
+  margin-top: auto;
+  padding-top: 0.6rem;
 }
 
 .pricing-card__btn {
@@ -239,7 +259,7 @@
 }
 
 .pricing-card__btn:hover:not(:disabled) {
-  filter: brightness(0.98);
+  filter: brightness(0.90);
   transform: translateY(-1px);
 }
 

@@ -111,6 +111,7 @@ export function AuthProvider({ children }) {
   function logout() {
     localStorage.removeItem("authToken");
     localStorage.removeItem("authUser");
+    localStorage.removeItem("lastRoute");
     setCurrentUser(null);
     setUserMeta(null);
     return Promise.resolve(true);
