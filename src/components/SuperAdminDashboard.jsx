@@ -26,61 +26,6 @@ function PlanBadge({ plan }) {
   );
 }
 
-function SmallStackedBars({ series, loading }) {
-  const max = useMemo(() => {
-    if (!Array.isArray(series) || series.length === 0) return 1;
-    return Math.max(1, ...series.map((d) => Number(d?.total || 0)));
-  }, [series]);
-
-  if (loading) {
-    return (
-      <div className="d-flex gap-2 align-items-end" style={{ height: 120 }}>
-        {Array.from({ length: 14 }).map((_, i) => (
-          <div
-            key={i}
-            className="bg-body-tertiary rounded"
-            style={{ width: 10, height: 24 + (i % 4) * 10, opacity: 0.6 }}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="d-flex gap-2 align-items-end" style={{ height: 120 }}>
-      {(series || []).map((d) => {
-        const total = Number(d?.total || 0);
-        const free = Number(d?.free || 0);
-        const pro = Number(d?.pro || 0);
-        const business = Number(d?.business || 0);
-        const h = Math.max(6, Math.round((total / max) * 120));
-        const freeH = total ? Math.round((free / total) * h) : 0;
-        const proH = total ? Math.round((pro / total) * h) : 0;
-        const bizH = Math.max(0, h - freeH - proH);
-
-        return (
-          <div key={d.day} className="d-flex flex-column align-items-center" style={{ width: 10 }}>
-            <div
-              className="rounded overflow-hidden"
-              title={`${d.day}: ${total} vendors (free ${free}, pro ${pro}, business ${business})`}
-              style={{
-                width: 10,
-                height: h,
-                background: "rgba(226,232,240,0.8)",
-                display: "flex",
-                flexDirection: "column-reverse",
-              }}
-            >
-              <div style={{ height: freeH, background: "rgba(34,197,94,0.65)" }} />
-              <div style={{ height: proH, background: "rgba(101,113,255,0.75)" }} />
-              <div style={{ height: bizH, background: "rgba(245,158,11,0.75)" }} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function SuperAdminDashboard({
   metrics,
@@ -93,7 +38,7 @@ export default function SuperAdminDashboard({
   const planCounts = metrics?.plans?.counts || { free: 0, pro: 0, business: 0 };
   const totalPlans = Number(metrics?.plans?.total || 0);
   const paidPlans = Number(planCounts.pro || 0) + Number(planCounts.business || 0);
-  const series = Array.isArray(metrics?.signupSeries) ? metrics.signupSeries : [];
+
 
   const vendorRows = useMemo(() => {
     const by = metrics?.usersByPlan || {};

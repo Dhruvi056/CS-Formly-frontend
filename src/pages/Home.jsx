@@ -23,10 +23,10 @@ export default function Home() {
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editJoined, setEditJoined] = useState("");
-  const [editLives, setEditLives] = useState("");
+  const [editJoined] = useState("");
+  const [editLives] = useState("");
   const [editWebsite] = useState("");
-  const [editAbout, setEditAbout] = useState("");
+  const [editAbout] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -314,7 +314,7 @@ export default function Home() {
       setEditLastName(parts.join(" ") || "");
     }
     setEditEmail(userMeta?.email || currentUser?.email || "");
-  }, [userMeta, showEditProfile]);
+  }, [userMeta, showEditProfile, currentUser?.email]);
 
   const profileName = userMeta?.name || "User";
   const profileEmail = userMeta?.email || currentUser?.email || "";
