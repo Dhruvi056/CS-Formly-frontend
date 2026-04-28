@@ -12,8 +12,7 @@ export default function AdminUsersTable({ searchQuery = "" }) {
   const [draftRole, setDraftRole] = useState("vendor_admin");
   const [draftVendorId, setDraftVendorId] = useState("");
   const [editingSaving, setEditingSaving] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [viewTarget, setViewTarget] = useState(null);
 
   useEffect(() => {
     if (searchQuery) setSearchTerm(searchQuery);
@@ -114,8 +113,8 @@ export default function AdminUsersTable({ searchQuery = "" }) {
 
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <div>
-            <h5 className="mb-1 fw-bold">Vendor Admins</h5>
-            <p className="text-muted small mb-0">All registered vendor accounts</p>
+            <h5 className="mb-1 fw-bold">Vendors</h5>
+            <p className="text-muted small mb-0">Manage all registered vendor accounts</p>
           </div>
           <div className="d-flex align-items-center gap-3">
             <div
@@ -128,13 +127,13 @@ export default function AdminUsersTable({ searchQuery = "" }) {
               <input
                 type="text"
                 className="form-control border-0 bg-transparent py-2 shadow-none form-control-custom"
-                placeholder="Search user, email, vendor..."
+                placeholder="Search vendors by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <span className="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
-              {`${totalCount} users`}
+              {`${totalCount} Vedors`}
             </span>
           </div>
         </div>
@@ -147,6 +146,7 @@ export default function AdminUsersTable({ searchQuery = "" }) {
                 <th className="text-uppercase fs-11px fw-bold text-secondary border-0">Email</th>
                 <th className="text-uppercase fs-11px fw-bold text-secondary border-0">Joined</th>
                 <th className="text-uppercase fs-11px fw-bold text-secondary border-0">Role</th>
+                <th className="text-uppercase fs-11px fw-bold text-secondary border-0">Plan</th>
                 <th className="text-uppercase fs-11px fw-bold text-secondary border-0">Vendor ID</th>
                 <th className="text-uppercase fs-11px fw-bold text-secondary border-0 text-end">Actions</th>
               </tr>
@@ -158,6 +158,19 @@ export default function AdminUsersTable({ searchQuery = "" }) {
                   <td>{u.email || "-"}</td>
                   <td className="text-muted">{u.joined}</td>
                   <td className="text-capitalize">{(u.role || "vendor_admin").replace("_", " ")}</td>
+                  <td className="text-capitalize">
+                    <span
+                      className={`badge rounded-pill ${
+                        u.subscriptionPlan === "business"
+                          ? "bg-warning-subtle text-warning"
+                          : u.subscriptionPlan === "pro"
+                            ? "bg-primary-subtle text-primary"
+                            : "bg-success-subtle text-success"
+                      }`}
+                    >
+                      {u.subscriptionPlan || "free"}
+                    </span>
+                  </td>
                   <td
                     className="text-muted"
                     style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}
@@ -181,13 +194,11 @@ export default function AdminUsersTable({ searchQuery = "" }) {
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-danger admin-user-action-btn"
-                      onClick={async () => {
-                        setDeleteTarget(u);
-                      }}
-                      title="Delete user"
+                      className="btn btn-sm btn-outline-secondary admin-user-action-btn"
+                      onClick={() => setViewTarget(u)}
+                      title="View user details"
                     >
-                      <LucideIcon name="trash-2" className="icon-sm" />
+                      <LucideIcon name="eye" className="icon-sm" />
                     </button>
                   </td>
                 </tr>
@@ -294,67 +305,80 @@ export default function AdminUsersTable({ searchQuery = "" }) {
         </div>
       )}
 
-      {deleteTarget && (
+      {viewTarget && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 1200 }}>
-          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 420 }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 560 }}>
             <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 16 }}>
               <div className="modal-header border-0 pb-0 pt-4 px-4">
                 <div className="d-flex gap-3 align-items-start">
                   <div
-                    className="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                    className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
                     style={{ width: 44, height: 44 }}
                   >
-                    <LucideIcon name="trash-2" className="text-danger" style={{ width: 20, height: 20 }} />
+                    <LucideIcon name="eye" className="text-primary" style={{ width: 20, height: 20 }} />
                   </div>
                   <div>
-                    <h5 className="modal-title fw-bold mb-1">Soft delete user?</h5>
+                    <h5 className="modal-title fw-bold mb-1">User details</h5>
                     <p className="text-muted small mb-0">
-                      User will be hidden from the list, but data stays in MongoDB.
+                      Complete subscription details and account info.
                     </p>
                   </div>
                 </div>
-                <button type="button" className="btn-close mt-1" aria-label="Close" onClick={() => setDeleteTarget(null)} />
+                <button type="button" className="btn-close mt-1" aria-label="Close" onClick={() => setViewTarget(null)} />
               </div>
-              <div className="modal-body px-4 pt-3 pb-0">
-                <div className="alert alert-warning d-flex gap-2 align-items-start mb-0">
-                  <LucideIcon name="alert-triangle" className="flex-shrink-0 mt-1" style={{ width: 16, height: 16 }} />
-                  <div className="small">
-                    <div className="fw-semibold">{deleteTarget.name || "-"}</div>
-                    <div className="text-muted">{deleteTarget.email || "-"}</div>
+              <div className="modal-body px-4 pt-3 pb-2">
+                <div className="row g-3 mb-3">
+                  <div className="col-sm-6">
+                    <div className="small text-muted">Name</div>
+                    <div className="fw-semibold">{viewTarget.name || "-"}</div>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="small text-muted">Email</div>
+                    <div className="fw-semibold">{viewTarget.email || "-"}</div>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="small text-muted">Joined</div>
+                    <div className="fw-semibold">{viewTarget.joined || "—"}</div>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="small text-muted">Current Plan</div>
+                    <div className="fw-semibold text-capitalize">{viewTarget.subscriptionPlan || "free"}</div>
                   </div>
                 </div>
+
+                <div className="border rounded-3 p-3 bg-light-subtle">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="fw-semibold">Subscription history</div>
+                    <span className="badge rounded-pill bg-primary-subtle text-primary">
+                      {Array.isArray(viewTarget.planHistory) ? viewTarget.planHistory.length : 0} times
+                    </span>
+                  </div>
+
+                  {Array.isArray(viewTarget.planHistory) && viewTarget.planHistory.length > 0 ? (
+                    <ul className="list-group list-group-flush">
+                      {[...viewTarget.planHistory]
+                        .sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0))
+                        .map((entry, idx) => (
+                          <li key={`${entry?.date || "d"}-${idx}`} className="list-group-item px-0 py-2 bg-transparent">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div className="text-capitalize fw-semibold">
+                                {entry?.plan || "free"} plan
+                              </div>
+                              <small className="text-muted">
+                                {entry?.date ? new Date(entry.date).toLocaleDateString() : "—"}
+                              </small>
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
+                    <div className="small text-muted">No subscription records found.</div>
+                  )}
+                </div>
               </div>
-              <div className="modal-footer border-0 px-4 pb-4 pt-3">
-                <button className="btn btn-light px-4" onClick={() => setDeleteTarget(null)} disabled={deleteBusy}>
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-danger px-4"
-                  disabled={deleteBusy}
-                  onClick={async () => {
-                    try {
-                      setDeleteBusy(true);
-                      const token = localStorage.getItem("authToken");
-                      const res = await fetch(`/api/admin/users/${deleteTarget.id}`, {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
-                      const data = await res.json().catch(() => ({}));
-                      if (!res.ok) {
-                        toast.error(data.message || "Failed to delete user.");
-                        return;
-                      }
-                      toast.success("User soft-deleted.");
-                      setDeleteTarget(null);
-                      await fetchUsers();
-                    } catch (err) {
-                      toast.error("Failed to delete user.");
-                    } finally {
-                      setDeleteBusy(false);
-                    }
-                  }}
-                >
-                  {deleteBusy ? "Deleting..." : "Yes, delete"}
+              <div className="modal-footer border-0 px-4 pb-4 pt-2">
+                <button className="btn btn-primary px-4" onClick={() => setViewTarget(null)}>
+                  Close
                 </button>
               </div>
             </div>

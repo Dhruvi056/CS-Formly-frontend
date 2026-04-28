@@ -201,29 +201,49 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     setLoadingSubmissions(true);
     try {
       const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        setSubmissions([]);
+        return;
+      }
       const res = await fetch(`/api/submissions/${form.formId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSubmissions(
-          data.map((s) => ({
-            ...s,
-            id: s._id,
-            submittedAt: new Date(s.createdAt).toLocaleString("en-IN", {
-              timeZone: "Asia/Kolkata",
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-          }))
-        );
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg =
+          body?.message ||
+          (res.status === 401 ? "Unauthorized. Please log in again." : "Failed to load submissions.");
+        toast.error(msg);
+        return;
       }
+
+      const rows = Array.isArray(body)
+        ? body
+        : Array.isArray(body?.submissions)
+          ? body.submissions
+          : Array.isArray(body?.data)
+            ? body.data
+            : [];
+
+      setSubmissions(
+        rows.map((s) => ({
+          ...s,
+          id: s._id ?? s.id,
+          submittedAt: new Date(s.createdAt || s.submittedAt || s.timestamp || Date.now()).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+        }))
+      );
     } catch (err) {
       console.error("Error fetching submissions:", err);
+      toast.error("Error fetching submissions.");
     } finally {
       setLoadingSubmissions(false);
     }
@@ -443,7 +463,6 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       return matchInFields || sub.submittedAt.toLowerCase().includes(s);
     });
   }, [normalizedSubmissions, searchQuery, fields]);
-console.log('filteredSubmissions',filteredSubmissions);
 
   const ownerEmail = userMeta?.email || currentUser?.email || "";
   const ownerInitial = getEmailInitial(ownerEmail);

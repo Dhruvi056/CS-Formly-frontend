@@ -77,7 +77,8 @@ export default function Sidebar({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [currentUser, userMeta?.role, sidebarRefreshKey]);
+  }, [currentUser, userMeta?.role]);
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -185,7 +186,7 @@ export default function Sidebar({
     };
 
     poll();
-    const interval = setInterval(poll, 7000);
+    const interval = setInterval(poll, 10000);
     const onFocus = () => poll();
     window.addEventListener("focus", onFocus);
 
@@ -250,9 +251,18 @@ export default function Sidebar({
   return (
     <nav className="sidebar">
       <div className="sidebar-header">
-        <div className="sidebar-brand">
+        <button
+          type="button"
+          className="sidebar-brand btn btn-link p-0 border-0 text-decoration-none"
+          onClick={() => {
+            onSelectForm?.(null);
+            navigate("/", { replace: true });
+          }}
+          style={{ cursor: "pointer" }}
+          aria-label="Go to Home"
+        >
           CS <span>Formly</span>
-        </div>
+        </button>
         <div className="sidebar-toggler" style={{ color: '#7987a1', display: 'flex' }} onClick={() => document.body.classList.toggle('sidebar-folded')}>
           <LucideIcon name="menu" className="icon-md" />
         </div>
@@ -287,7 +297,7 @@ export default function Sidebar({
                   }}
                 >
                   <LucideIcon name="users" className="link-icon" />
-                  <span className="link-title">Vendor Admin</span>
+                  <span className="link-title">Vendors</span>
                 </button>
               </li>
 
@@ -363,9 +373,10 @@ export default function Sidebar({
                   </p>
                   {nextPlan && (
                     <button
-                      className="btn btn-link  fw-bold text-decoration-none text-start p-0"
-                      style={{ fontSize: "12px", color: '#6571ff' }}
+                      className="btn btn-sm btn-primary fw-bold align-self-start"
+                      style={{ fontSize: "12.5px", borderRadius: 10, padding: "6px 10px" }}
                       onClick={() => navigate('/pricing')}
+                      type="button"
                     >
                       Upgrade Now
                     </button>
@@ -403,11 +414,12 @@ export default function Sidebar({
                         Submission limit reached. New submissions are blocked.
                       </p>
                       <button
-                        className="btn btn-link p-0 fw-bold text-decoration-none text-start"
-                        style={{ fontSize: '13px', color: '#6571ff' }}
+                        className="btn btn-sm btn-primary fw-bold align-self-start"
+                        style={{ fontSize: '12.5px', borderRadius: 10, padding: "6px 10px" }}
                         onClick={() => navigate('/pricing')}
+                        type="button"
                       >
-                        Upgrade to Pro →
+                        Upgrade to Pro
                       </button>
                     </>
                   ) : isNearLimit ? (
@@ -452,16 +464,76 @@ export default function Sidebar({
                         Storage limit reached. New file uploads are blocked.
                       </p>
                       <button
-                        className="btn btn-link p-0 fw-bold text-decoration-none text-start"
-                        style={{ fontSize: '13px', color: '#6571ff' }}
+                        className="btn btn-sm btn-primary fw-bold align-self-start"
+                        style={{ fontSize: '12.5px', borderRadius: 10, padding: "6px 10px" }}
                         onClick={() => navigate('/pricing')}
+                        type="button"
                       >
-                        Upgrade plan →
+                        Upgrade plan
                       </button>
                     </>
                   ) : isNearLimit ? (
                     <p className="mb-0" style={{ fontSize: '12px', color: '#f97316' }}>
                       Approaching storage limit — upgrade soon.
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })()}
+
+          {/* Forms Usage Bar — requested under usage cards */}
+          {!isSuperAdmin && usageData && (() => {
+            const used = usageData.usage?.forms ?? forms.length ?? 0;
+            const max = usageData.limits?.maxForms ?? null;
+            const isUnlimited = max == null;
+            const pct = !isUnlimited && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
+            const unlimitedPct = used > 0 ? Math.min(100, 20 + used * 5) : 0;
+            const isAtLimit = !isUnlimited && max > 0 && used >= max;
+            const isNearLimit = !isUnlimited && pct >= 80 && !isAtLimit;
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+
+            return (
+              <li className="nav-item px-auto mt-1 mb-2">
+                <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: isAtLimit ? '#fca5a5' : '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div className="d-flex align-items-center justify-content-between" style={{ fontSize: '12.5px', fontWeight: 600, color: isAtLimit ? '#ef4444' : '#4d5969' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <LucideIcon name={isAtLimit ? 'alert-circle' : 'file-text'} className="icon-sm flex-shrink-0" />
+                      Forms
+                    </span>
+                    <span style={{ color: isAtLimit ? '#ef4444' : '#7987a1' }}>
+                      {used.toLocaleString()} / {isUnlimited ? "∞" : max.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '99px', background: '#e9ecef', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: isUnlimited ? `${unlimitedPct}%` : `${pct}%`,
+                        background: barColor,
+                        borderRadius: '99px',
+                        transition: 'width 0.4s ease',
+                        opacity: isUnlimited ? 0.55 : 1,
+                      }}
+                    />
+                  </div>
+                  {isAtLimit ? (
+                    <>
+                      <p className="mb-0" style={{ fontSize: '12.5px', color: '#ef4444', fontWeight: 500 }}>
+                        Form limit reached. Create a new form after upgrading.
+                      </p>
+                      <button
+                        className="btn btn-sm btn-primary fw-bold align-self-start"
+                        style={{ fontSize: '12.5px', borderRadius: 10, padding: "6px 10px" }}
+                        onClick={() => navigate('/pricing')}
+                        type="button"
+                      >
+                        Upgrade plan
+                      </button>
+                    </>
+                  ) : isNearLimit ? (
+                    <p className="mb-0" style={{ fontSize: '12px', color: '#f97316' }}>
+                      Approaching form limit — upgrade soon.
                     </p>
                   ) : null}
                 </div>

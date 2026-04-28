@@ -54,6 +54,7 @@ export default function Signup() {
     // --- VALIDATION ---
     const newFieldErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
 
     if (!firstName.trim()) newFieldErrors.firstName = "First name is required.";
     if (!lastName.trim()) newFieldErrors.lastName = "Last name is required.";
@@ -66,9 +67,9 @@ export default function Signup() {
 
     if (!password) {
       newFieldErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      newFieldErrors.password = "Password must be at least 6 characters long.";
-    }
+    } else if (!passwordRegex.test(password)) {
+      newFieldErrors.password ="Password must include uppercase, lowercase , number and special character  (min 6 chars)";
+  }
 
     if (!confirmPassword) {
       newFieldErrors.confirmPassword = "Confirm password is required.";

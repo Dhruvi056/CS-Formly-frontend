@@ -162,78 +162,19 @@ export default function SuperAdminDashboard({
           </div>
         </div>
 
-        <div className="col-lg-7">
-          <div className="card shadow-sm border-0 p-4 h-100">
-            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-              <div>
-                <h6 className="mb-1 fw-bold">Plan breakdown</h6>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Vendors by subscription plan
-                </div>
-              </div>
-              <div className="d-flex gap-2 flex-wrap">
-                <span className="badge bg-success-subtle text-success rounded-pill">
-                  Free: {loading ? "..." : Number(planCounts.free || 0)}
-                </span>
-                <span className="badge bg-primary-subtle text-primary rounded-pill">
-                  Pro: {loading ? "..." : Number(planCounts.pro || 0)}
-                </span>
-                <span className="badge bg-warning-subtle text-warning rounded-pill">
-                  Business: {loading ? "..." : Number(planCounts.business || 0)}
-                </span>
-              </div>
+
+        <div className="col-12">
+          <div className="card shadow-sm border-0 p-4 h-100 w-100">
+
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <h5 className="mb-0 fw-semibold">Vendors by Plan</h5>
             </div>
 
-            <div className="row g-3 align-items-center">
-              <div className="col-md-6">
-                <div className="text-muted mb-2" style={{ fontSize: 13 }}>
-                  Last 14 days vendor signups
-                </div>
-                <SmallStackedBars series={series} loading={loading} />
-              </div>
-              <div className="col-md-6">
-                <div className="p-3 rounded-3 bg-body-tertiary">
-                  <div className="d-flex align-items-center justify-content-between mb-2">
-                    <div className="fw-semibold">Legend</div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
-                      stacked bars
-                    </div>
-                  </div>
-                  <div className="d-flex flex-column gap-2" style={{ fontSize: 13 }}>
-                    <div className="d-flex align-items-center gap-2">
-                      <span style={{ width: 10, height: 10, background: "rgba(34,197,94,0.65)", borderRadius: 3 }} />
-                      <span>Free</span>
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                      <span style={{ width: 10, height: 10, background: "rgba(101,113,255,0.75)", borderRadius: 3 }} />
-                      <span>Pro</span>
-                    </div>
-                    <div className="d-flex align-items-center gap-2">
-                      <span style={{ width: 10, height: 10, background: "rgba(245,158,11,0.75)", borderRadius: 3 }} />
-                      <span>Business</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+            <div className="table-responsive">
+              <table className="table align-middle mb-0">
 
-        <div className="col-lg-5">
-          <div className="card shadow-sm border-0 p-4 h-100 z-0">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <div>
-                <h6 className="mb-1 fw-bold">Who took which plan</h6>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  Recent vendors (latest 80)
-                </div>
-              </div>
-            </div>
-
-            <div className="table-responsive" style={{ maxHeight: 320, overflowY: "auto" }}>
-              <table className="table table-sm align-middle mb-0">
-                <thead className="sticky-top bg-body">
-                  <tr className="text-muted" style={{ fontSize: 12 }}>
+                <thead className="border-bottom">
+                  <tr className="text-muted small">
                     <th style={{ width: "55%" }}>Vendor</th>
                     <th style={{ width: "25%" }}>Plan</th>
                     <th style={{ width: "20%" }} className="text-end">
@@ -241,11 +182,12 @@ export default function SuperAdminDashboard({
                     </th>
                   </tr>
                 </thead>
-                <tbody style={{ fontSize: 13 }}>
+
+                <tbody>
                   {loading ? (
                     <tr>
                       <td colSpan={3} className="py-4 text-center text-muted">
-                        Loading…
+                        Loading...
                       </td>
                     </tr>
                   ) : vendorRows.length === 0 ? (
@@ -256,25 +198,44 @@ export default function SuperAdminDashboard({
                     </tr>
                   ) : (
                     vendorRows.map((u) => (
-                      <tr key={u.id}>
+                      <tr
+                        key={u.id}
+                        style={{ cursor: "pointer", transition: "0.2s" }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "#f8fafc")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
+                      >
                         <td>
                           <div className="fw-semibold">{u.name || "-"}</div>
-                          <div className="text-muted" style={{ fontSize: 12 }}>
+                          <div className="text-muted small">
                             {u.email || "-"}
                           </div>
                         </td>
+
                         <td>
                           <PlanBadge plan={u.subscriptionPlan} />
                         </td>
-                        <td className="text-end text-muted" style={{ fontSize: 12 }}>
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "-"}
+
+                        <td className="text-end text-muted small">
+                          {u.createdAt
+                            ? new Date(u.createdAt).toLocaleDateString("en-US", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                            : "-"}
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
+
               </table>
             </div>
+
           </div>
         </div>
       </div>

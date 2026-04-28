@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Brand Colors */
+:root {
+  --primary-color: #6571ff;
+  --primary-hover: #505cf0;
+}
+
+.btn-primary,
+.bg-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+.btn-outline-primary {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.bg-primary-subtle {
+  background-color: rgba(101, 113, 255, 0.1) !important;
+}
+
 /* Lucide icons: wrapper classes from components (icon-sm / icon-md) */
 .icon-sm svg {
   width: 1rem;
@@ -18,6 +55,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -28,6 +66,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -65,4 +104,25 @@ input:focus-visible {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Sidebar folded: keep clean icon-only layout */
+body.sidebar-folded .sidebar .nav-category,
+body.sidebar-folded .sidebar .link-title,
+body.sidebar-folded .sidebar .link-arrow,
+body.sidebar-folded .sidebar .badge,
+body.sidebar-folded .sidebar .nav.sub-menu,
+body.sidebar-folded .sidebar .sidebar-brand span,
+body.sidebar-folded .sidebar .sidebar-body .nav-item>div {
+  display: none !important;
+}
+
+body.sidebar-folded .sidebar .sidebar-brand {
+  justify-content: center;
+}
+
+body.sidebar-folded .sidebar .sidebar-body .nav-link {
+  justify-content: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
