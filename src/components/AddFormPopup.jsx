@@ -219,8 +219,8 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
 
 
   const isFormValid = activeTab === "Form"
-    ? (formName.trim() !== "" && selectedFolder !== "")
-    : (folderName.trim() !== "");
+    ? formName.trim() !== ""
+    : folderName.trim() !== "";
 
   useEffect(() => {
     if (!currentUser) return;
@@ -359,7 +359,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                       onChange={e => setSelectedFolder(e.target.value)}
                       style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
                     >
-                      <option value="">Select a folder...</option>
+                      <option value="">None (Direct Form)</option>
                       {folders.map((f) => {
                         const id = normalizeMongoId(f._id);
                         return id ? (

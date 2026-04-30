@@ -2,8 +2,34 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { normalizeMongoId } from "../utils/mongoIds.js";
 import "../styles/components/form-details-toolbar.css";
+
+// ── Quill Modules ──────────────────────────────────────────────────────────
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, false] }],
+    ["bold", "italic", "underline", "strike", "blockquote"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["link", "image"],
+    ["clean"],
+  ],
+};
+
+const quillFormats = [
+  "header",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "blockquote",
+  "list",
+  "bullet",
+  "link",
+  "image",
+];
 
 function isProbablyFileFieldName(fieldName) {
   const lowerField = (fieldName || "").toLowerCase();
@@ -145,10 +171,15 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const [submissions, setSubmissions] = useState([]);
   const [copied, setCopied] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailModalTab, setEmailModalTab] = useState("notifications"); // "notifications" or "autoresponder"
   const [emailInput, setEmailInput] = useState("");
   const [emailsList, setEmailsList] = useState([]);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [, setEmailSaved] = useState(false);
+  const [customTemplateDraft, setCustomTemplateDraft] = useState({
+    enabled: false,
+    body: "",
+  });
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [viewingSubmission, setViewingSubmission] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -160,6 +191,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const [moveFolderId, setMoveFolderId] = useState("");
   const [moveSaving, setMoveSaving] = useState(false);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [emailSettingsSaving, setEmailSettingsSaving] = useState(false);
 
   const copyToClipboard = async (text) => {
     try {
@@ -274,6 +306,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         ? emailStr.split(/[,;\n]+/).map((e) => e.trim()).filter(Boolean)
         : []
     );
+    setCustomTemplateDraft({
+      enabled: form.settings?.customTemplateEnabled || false,
+      body: form.settings?.customTemplateBody || "",
+    });
   }, [form]);
 
   const isNameTaken = (name, excludeFormId) => {
@@ -342,31 +378,42 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     }
   };
 
-  const saveCustomEmail = async () => {
+  const saveEmailSettings = async () => {
     if (!form?.formId) return;
-    setEmailLoading(true);
+    setEmailSettingsSaving(true);
     try {
       const token = localStorage.getItem("authToken");
       const emailStr = emailsList.join(", ");
       const res = await fetch(`/api/forms/${form.formId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ settings: { notificationEmail: emailStr } }),
+        body: JSON.stringify({
+          settings: {
+            notificationEmail: emailStr,
+            customTemplateEnabled: customTemplateDraft.enabled,
+            customTemplateBody: customTemplateDraft.body,
+          },
+        }),
       });
       if (res.ok) {
-        onFormUpdated?.({ settings: { ...form.settings, notificationEmail: emailStr } });
-        setEmailSaved(true);
-        setTimeout(() => setEmailSaved(false), 2000);
+        onFormUpdated?.({
+          settings: {
+            ...form.settings,
+            notificationEmail: emailStr,
+            customTemplateEnabled: customTemplateDraft.enabled,
+            customTemplateBody: customTemplateDraft.body,
+          },
+        });
         setShowEmailModal(false);
-        toast.success("Notification emails saved.");
+        toast.success("Email settings saved.");
       } else {
         const errBody = await res.json().catch(() => ({}));
-        toast.error(errBody.message || "Failed to save emails");
+        toast.error(errBody.message || "Failed to save settings");
       }
     } catch (err) {
-      toast.error("Failed to save emails");
+      toast.error("Failed to save settings");
     } finally {
-      setEmailLoading(false);
+      setEmailSettingsSaving(false);
     }
   };
 
@@ -487,7 +534,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
               <span className="fd-id-chip">ID · {form.formId}</span>
               <button
                 type="button"
-                onClick={() => setShowEmailModal(true)}
+                onClick={() => {
+                  setEmailModalTab("notifications");
+                  setShowEmailModal(true);
+                }}
                 className="btn fd-btn-notify"
               >
                 <LucideIcon name="mail" className="icon-sm me-1" />
@@ -732,7 +782,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             aria-modal="true"
           >
             <div
-              className="modal-dialog modal-dialog-centered"
+              className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
               style={{ maxWidth: 640 }}
             >
               <div
@@ -811,7 +861,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           document.body
         )}
 
-      {/* ── Notification Email Modal (COMPACT + INITIALS) ── */}
+      {/* ── Email Settings Modal (Merged) ── */}
       {showEmailModal &&
         createPortal(
           <div
@@ -819,230 +869,278 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             style={{ backgroundColor: "rgba(0,0,0,0.45)", zIndex: 11000 }}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="fd-email-modal-title"
           >
             <div
-              className="modal-dialog modal-dialog-centered"
-              style={{ maxWidth: 380 }}
+              className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+              style={{ maxWidth: 450 }}
             >
               <div
                 className="modal-content border-0 shadow-lg"
                 style={{ borderRadius: 14 }}
               >
-                {/* Header */}
-                <div
-                  className="modal-header border-0 pb-0 pt-3 px-3 align-items-start"
-                  style={{ borderBottom: "0.5px solid var(--bs-border-color)" }}
-                >
-                  <div className="d-flex gap-2 align-items-center">
-                    <div
-                      className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                      style={{ width: 30, height: 30 }}
-                    >
-                      <LucideIcon
-                        name="mail"
-                        className="text-primary"
-                        style={{ width: 14, height: 14 }}
-                      />
-                    </div>
-                    <div>
-                      <h6
-                        className="modal-title fw-bold mb-0"
-                        id="fd-email-modal-title"
-                        style={{ fontSize: 14 }}
+                {/* Header with Tabs */}
+                <div className="modal-header border-0 pb-0 pt-3 px-3 flex-column align-items-stretch">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="d-flex gap-2 align-items-center">
+                      <div
+                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                        style={{ width: 30, height: 30 }}
                       >
-                        Notification emails
+                        <LucideIcon
+                          name="mail"
+                          className="text-primary"
+                          style={{ width: 14, height: 14 }}
+                        />
+                      </div>
+                      <h6 className="modal-title fw-bold mb-0" style={{ fontSize: 15 }}>
+                        Email Settings
                       </h6>
-                      <p className="text-muted mb-0" style={{ fontSize: 11 }}>
-                        Manage submission alerts
-                      </p>
                     </div>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowEmailModal(false)}
+                    />
                   </div>
-                  <button
-                    type="button"
-                    className="btn-close mt-1"
-                    aria-label="Close"
-                    onClick={() => setShowEmailModal(false)}
-                  />
+                  
+                  <ul className="nav nav-tabs border-bottom-0 gap-1" style={{ fontSize: 13 }}>
+                    <li className="nav-item">
+                      <button 
+                        className={`nav-link border-0 px-3 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                        onClick={() => setEmailModalTab("notifications")}
+                        style={{ background: "transparent" }}
+                      >
+                        Notifications
+                      </button>
+                    </li>
+
+                    <li className="nav-item">
+                      <button 
+                        className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                        onClick={() => setEmailModalTab("customTemplate")}
+                        style={{ background: "transparent" }}
+                      >
+                        Custom Template
+                      </button>
+                    </li>
+                  </ul>
                 </div>
 
                 {/* Body */}
-                <div className="modal-body px-3 pt-2 pb-2">
-
-                  {/* Recipient list */}
-                  <label
-                    className="form-label mb-1"
-                    style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--bs-secondary-color)" }}
-                  >
-                    Recipient list
-                  </label>
-                  <div
-                    className="rounded-3 bg-light mb-2"
-                    style={{
-                      border: "0.5px solid var(--bs-border-color)",
-                      minHeight: 48,
-                      maxHeight: 110,
-                      overflowY: "auto",
-                      padding: "8px 10px",
-                    }}
-                  >
-                    {emailsList.length === 0 ? (
-                      <p
-                        className="text-muted fst-italic mb-0 text-center"
-                        style={{ fontSize: 12, paddingTop: 4 }}
+                <div className="modal-body px-3 pt-3 pb-2">
+                  {emailModalTab === "notifications" && (
+                    <>
+                      {/* Recipient list */}
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.05em" }}>
+                        Recipient list
+                      </label>
+                      <div
+                        className="rounded-3 bg-light mb-2"
+                        style={{
+                          border: "0.5px solid var(--bs-border-color)",
+                          minHeight: 48,
+                          maxHeight: 110,
+                          overflowY: "auto",
+                          padding: "8px 10px",
+                        }}
                       >
-                        No recipient emails added yet.
-                      </p>
-                    ) : (
-                      <ul className="list-unstyled mb-0">
-                        {emailsList.map((e, i) => {
-                          const initial = getEmailInitial(e);
-                          const color = getInitialColor(initial);
-                          return (
-                            <li
-                              key={`${e}-${i}`}
-                              className="d-flex align-items-center justify-content-between py-1"
-                              style={{ borderBottom: "0.5px solid rgba(0,0,0,0.06)" }}
-                            >
-                              <div className="d-flex align-items-center gap-2">
-                                {/* Initial avatar */}
-                                <div
-                                  className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                  style={{
-                                    width: 22,
-                                    height: 22,
-                                    background: color,
-                                  }}
+                        {emailsList.length === 0 ? (
+                          <p className="text-muted fst-italic mb-0 text-center" style={{ fontSize: 12, paddingTop: 4 }}>
+                            No recipient emails added yet.
+                          </p>
+                        ) : (
+                          <ul className="list-unstyled mb-0">
+                            {emailsList.map((e, i) => {
+                              const initial = getEmailInitial(e);
+                              const color = getInitialColor(initial);
+                              return (
+                                <li
+                                  key={`${e}-${i}`}
+                                  className="d-flex align-items-center justify-content-between py-1"
+                                  style={{ borderBottom: "0.5px solid rgba(0,0,0,0.06)" }}
                                 >
-                                  <span
-                                    style={{
-                                      fontSize: 10,
-                                      fontWeight: 600,
-                                      color: "#fff",
-                                      lineHeight: 1,
-                                    }}
+                                  <div className="d-flex align-items-center gap-2">
+                                    <div
+                                      className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                      style={{ width: 22, height: 22, background: color }}
+                                    >
+                                      <span style={{ fontSize: 10, fontWeight: 600, color: "#fff", lineHeight: 1 }}>
+                                        {initial}
+                                      </span>
+                                    </div>
+                                    <span className="text-break" style={{ fontSize: 12 }}>{e}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-danger text-decoration-none p-0 flex-shrink-0 ms-2"
+                                    style={{ fontSize: 11 }}
+                                    onClick={() => setEmailsList(emailsList.filter((_, idx) => idx !== i))}
                                   >
-                                    {initial}
-                                  </span>
-                                </div>
-                                <span
-                                  className="text-break"
-                                  style={{ fontSize: 12 }}
-                                >
-                                  {e}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-link text-danger text-decoration-none p-0 flex-shrink-0 ms-2"
-                                style={{ fontSize: 11 }}
-                                onClick={() =>
-                                  setEmailsList(
-                                    emailsList.filter((_, idx) => idx !== i)
-                                  )
-                                }
-                              >
-                                Remove
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
+                                    Remove
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
 
-                  {/* Add new recipient */}
-                  <label
-                    className="form-label mb-1"
-                    style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--bs-secondary-color)" }}
-                  >
-                    Add new recipient
-                  </label>
-                  <div className="d-flex gap-2 mb-2">
-                    <input
-                      type="email"
-                      className="form-control"
-                      style={{ fontSize: 12, padding: "5px 8px" }}
-                      value={emailInput}
-                      onChange={(ev) => setEmailInput(ev.target.value)}
-                      onKeyDown={(ev) => {
-                        if (ev.key === "Enter") {
-                          ev.preventDefault();
-                          addEmail();
-                        }
-                      }}
-                      placeholder="e.g. notifications@company.com"
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-primary flex-shrink-0"
-                      style={{ fontSize: 12, padding: "5px 12px" }}
-                      onClick={addEmail}
-                    >
-                      + Add
-                    </button>
-                  </div>
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                        Add new recipient
+                      </label>
+                      <div className="d-flex gap-2 mb-2">
+                        <input
+                          type="email"
+                          className="form-control"
+                          style={{ fontSize: 12, padding: "5px 8px" }}
+                          value={emailInput}
+                          onChange={(ev) => setEmailInput(ev.target.value)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter") {
+                              ev.preventDefault();
+                              addEmail();
+                            }
+                          }}
+                          placeholder="e.g. notifications@company.com"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-primary flex-shrink-0"
+                          style={{ fontSize: 12, padding: "5px 12px" }}
+                          onClick={addEmail}
+                        >
+                          + Add
+                        </button>
+                      </div>
 
-                  {/* Info alert */}
-                  <div
-                    className="alert alert-info d-flex gap-2 align-items-start mb-2"
-                    style={{ padding: "6px 9px" }}
-                  >
-                    <LucideIcon
-                      name="info"
-                      className="flex-shrink-0 mt-1"
-                      style={{ width: 12, height: 12 }}
-                    />
-                    <span style={{ fontSize: 11 }}>
-                      Multiple emails supported. All listed addresses receive alerts on every new submission.
-                    </span>
-                  </div>
+                      <div className="alert alert-info d-flex gap-2 align-items-start mb-2 py-2" style={{ fontSize: 11 }}>
+                        <LucideIcon name="info" className="flex-shrink-0 mt-1" style={{ width: 12, height: 12 }} />
+                        <span>Addresses listed here receive alerts on every new submission.</span>
+                      </div>
 
-                  {/* Owner */}
-                  <label
-                    className="form-label mb-1"
-                    style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--bs-secondary-color)" }}
-                  >
-                    Owner
-                  </label>
-                  <div
-                    className="rounded-3 bg-light d-flex align-items-center gap-2"
-                    style={{
-                      border: "0.5px solid var(--bs-border-color)",
-                      padding: "7px 10px",
-                    }}
-                  >
-                    {/* Owner initial avatar */}
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                      style={{
-                        width: 28,
-                        height: 28,
-                        background: ownerColor,
-                      }}
-                    >
-                      <span
-                        style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1 }}
-                      >
-                        {ownerInitial}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="mb-0 text-break" style={{ fontSize: 12 }}>
-                        {ownerEmail || "—"}
-                      </p>
-                      <p className="mb-0 text-muted" style={{ fontSize: 10 }}>
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
                         Owner
-                      </p>
-                    </div>
-                  </div>
+                      </label>
+                      <div className="rounded-3 bg-light d-flex align-items-center gap-2 p-2" style={{ border: "0.5px solid var(--bs-border-color)" }}>
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{ width: 28, height: 28, background: ownerColor }}
+                        >
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1 }}>{ownerInitial}</span>
+                        </div>
+                        <div>
+                          <p className="mb-0 text-break" style={{ fontSize: 12 }}>{ownerEmail || "—"}</p>
+                          <p className="mb-0 text-muted" style={{ fontSize: 10 }}>Owner</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+
+                  {emailModalTab === "customTemplate" && (
+                    <>
+                      <div className="form-check form-switch mb-3">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="customTemplateEnabled"
+                          checked={customTemplateDraft.enabled}
+                          onChange={(e) =>
+                            setCustomTemplateDraft({ ...customTemplateDraft, enabled: e.target.checked })
+                          }
+                        />
+                        <label className="form-check-label small fw-bold" htmlFor="customTemplateEnabled">
+                          Enable Custom Template for Notifications
+                        </label>
+                      </div>
+
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                          Custom HTML Template
+                        </label>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-decoration-none p-0"
+                          style={{ fontSize: 11 }}
+                          onClick={() => setIsHtmlMode(!isHtmlMode)}
+                        >
+                          {isHtmlMode ? "Switch to Visual Editor" : "Switch to HTML Code"}
+                        </button>
+                      </div>
+
+                      <div className="mb-2 fd-quill-container">
+                        <style>{`
+                          .fd-quill-container .ql-container {
+                            height: 180px;
+                            border-bottom-left-radius: 8px;
+                            border-bottom-right-radius: 8px;
+                            font-family: 'Segoe UI', system-ui, sans-serif;
+                            font-size: 13px;
+                          }
+                          .fd-quill-container .ql-toolbar {
+                            border-top-left-radius: 8px;
+                            border-top-right-radius: 8px;
+                            background: #f8fafc;
+                          }
+                          .fd-quill-container .ql-editor.ql-blank::before {
+                            font-style: normal;
+                            color: #94a3b8;
+                          }
+                        `}</style>
+                        {isHtmlMode ? (
+                          <textarea
+                            className="form-control"
+                            style={{ height: 223, fontFamily: "monospace", fontSize: 13, resize: "vertical" }}
+                            value={customTemplateDraft.body}
+                            onChange={(e) => setCustomTemplateDraft({ ...customTemplateDraft, body: e.target.value })}
+                            disabled={!customTemplateDraft.enabled}
+                            placeholder="Type raw HTML here..."
+                          />
+                        ) : (
+                          <ReactQuill
+                            theme="snow"
+                            value={customTemplateDraft.body}
+                            onChange={(content) => setCustomTemplateDraft({ ...customTemplateDraft, body: content })}
+                            modules={quillModules}
+                            formats={quillFormats}
+                            placeholder="Design your notification email template..."
+                            readOnly={!customTemplateDraft.enabled}
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
+                        <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
+                          <LucideIcon name="info" style={{ width: 14, height: 14 }} />
+                          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.03em" }}>Available Placeholders</span>
+                        </div>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
+                          {['{{AllFields}}', '{{FormName}}', '{{DashboardUrl}}', '{{SubmittedAt}}', '{{IpAddress}}'].map(tag => (
+                            <code 
+                              key={tag}
+                              className="bg-white border rounded px-1 text-primary" 
+                              style={{ cursor: "pointer", fontSize: 10 }}
+                              onClick={() => {
+                                copyToClipboard(tag);
+                                toast.success(`Copied ${tag}`);
+                              }}
+                            >
+                              {tag}
+                            </code>
+                          ))}
+                        </div>
+                        <div className="text-muted" style={{ fontSize: 10 }}>
+                          Tip: Use <code>{`{{FieldName}}`}</code> to insert a specific field value.
+                        </div>
+                      </div>
+
+                      
+                    </>
+                  )}
                 </div>
 
                 {/* Footer */}
-                <div
-                  className="modal-footer border-0 pt-0 pb-3 px-3"
-                  style={{ gap: 6 }}
-                >
+                <div className="modal-footer border-0 pt-0 pb-3 px-3" style={{ gap: 6 }}>
                   <button
                     type="button"
                     className="btn btn-light"
@@ -1055,10 +1153,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     type="button"
                     className="btn btn-primary"
                     style={{ fontSize: 12, padding: "5px 16px" }}
-                    onClick={saveCustomEmail}
-                    disabled={emailLoading}
+                    onClick={saveEmailSettings}
+                    disabled={emailSettingsSaving}
                   >
-                    {emailLoading ? "Saving…" : "Save changes"}
+                    {emailSettingsSaving ? "Saving…" : "Save changes"}
                   </button>
                 </div>
               </div>

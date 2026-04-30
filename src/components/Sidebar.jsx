@@ -7,6 +7,18 @@ import { normalizeMongoId } from "../utils/mongoIds.js";
 
 const FREE_STORAGE_BYTES = 1024 * 1024 * 1024;
 
+const LucideIcon = ({ name, className = "" }) => {
+  useEffect(() => {
+    if (window.lucide) window.lucide.createIcons();
+  }, [name]);
+  return (
+    <span
+      className="d-inline-flex align-items-center justify-content-center"
+      dangerouslySetInnerHTML={{ __html: `<i data-lucide="${name}" class="${className}" stroke-width="2"></i>` }}
+    />
+  );
+};
+
 function formatBytes(n) {
   if (n == null || Number.isNaN(Number(n))) return "—";
   const v = Number(n);
@@ -236,17 +248,7 @@ export default function Sidebar({
 
   const formsWithoutFolder = forms.filter((form) => !normalizeMongoId(form.folderId));
 
-  const LucideIcon = ({ name, className = "" }) => {
-    useEffect(() => {
-      if (window.lucide) window.lucide.createIcons();
-    }, [name]);
-    return (
-      <span
-        className="d-inline-flex align-items-center justify-content-center"
-        dangerouslySetInnerHTML={{ __html: `<i data-lucide="${name}" class="${className}" stroke-width="2"></i>` }}
-      />
-    );
-  };
+
 
   return (
     <nav className="sidebar">
@@ -397,16 +399,18 @@ export default function Sidebar({
             return (
               <li className="nav-item px-auto mt-1 mb-2">
                 <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: isAtLimit ? '#fca5a5' : '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div className="d-flex align-items-center justify-content-between" style={{ fontSize: '12.5px', fontWeight: 600, color: isAtLimit ? '#ef4444' : '#4d5969' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div className="d-flex flex-column" style={{ fontWeight: 600, color: isAtLimit ? '#ef4444' : '#4d5969' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', fontSize: '12.5px' }}>
                       <LucideIcon name={isAtLimit ? 'alert-circle' : 'inbox'} className="icon-sm flex-shrink-0" />
                       Submissions
                     </span>
-                    <span style={{ color: isAtLimit ? '#ef4444' : '#7987a1' }}>{used.toLocaleString()} / {max.toLocaleString()}</span>
+                    <span style={{ marginTop: '2px', fontSize: '11.5px', fontWeight: 500, color: isAtLimit ? '#ef4444' : '#7987a1' }}>
+                      {used.toLocaleString()} / {max.toLocaleString()}
+                    </span>
                   </div>
                   {/* progress bar */}
                   <div style={{ height: '6px', borderRadius: '99px', background: '#e9ecef', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                    <div style={{ height: '100%', width: `${used > 0 ? Math.max(1, pct) : 0}%`, background: barColor, borderRadius: '99px', transition: 'width 0.4s ease' }} />
                   </div>
                   {isAtLimit ? (
                     <>
@@ -456,7 +460,7 @@ export default function Sidebar({
                     </span>
                   </div>
                   <div style={{ height: '6px', borderRadius: '99px', background: '#e9ecef', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                    <div style={{ height: '100%', width: `${used > 0 ? Math.max(1, pct) : 0}%`, background: barColor, borderRadius: '99px', transition: 'width 0.4s ease' }} />
                   </div>
                   {isAtLimit ? (
                     <>
@@ -482,13 +486,71 @@ export default function Sidebar({
             );
           })()}
 
+          {/* Folders Usage Bar */}
+          {!isSuperAdmin && usageData && (() => {
+            const used = usageData.usage?.folders ?? folders.length ?? 0;
+            const max = usageData.limits?.maxFolders ?? null;
+            const isUnlimited = max == null;
+            const pct = !isUnlimited && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
+            const unlimitedPct = used > 0 ? 2 : 0;
+            const isAtLimit = !isUnlimited && max > 0 && used >= max;
+            const isNearLimit = !isUnlimited && pct >= 80 && !isAtLimit;
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+
+            return (
+              <li className="nav-item px-auto mt-1 mb-2">
+                <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: isAtLimit ? '#fca5a5' : '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div className="d-flex align-items-center justify-content-between" style={{ fontSize: '12.5px', fontWeight: 600, color: isAtLimit ? '#ef4444' : '#4d5969' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <LucideIcon name={isAtLimit ? 'alert-circle' : 'folder'} className="icon-sm flex-shrink-0" />
+                      Folders
+                    </span>
+                    <span style={{ color: isAtLimit ? '#ef4444' : '#7987a1' }}>
+                      {used.toLocaleString()} / {isUnlimited ? "∞" : max.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ height: '6px', borderRadius: '99px', background: '#e9ecef', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: isUnlimited ? `${unlimitedPct}%` : `${pct}%`,
+                        background: barColor,
+                        borderRadius: '99px',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                  {isAtLimit ? (
+                    <>
+                      <p className="mb-0" style={{ fontSize: '12.5px', color: '#ef4444', fontWeight: 500 }}>
+                        Folder limit reached. Upgrade to create more workspaces.
+                      </p>
+                      <button
+                        className="btn btn-sm btn-primary fw-bold align-self-start"
+                        style={{ fontSize: '12.5px', borderRadius: 10, padding: "6px 10px" }}
+                        onClick={() => navigate('/pricing')}
+                        type="button"
+                      >
+                        Upgrade plan
+                      </button>
+                    </>
+                  ) : isNearLimit ? (
+                    <p className="mb-0" style={{ fontSize: '12px', color: '#f97316' }}>
+                      Approaching folder limit — upgrade soon.
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })()}
+
           {/* Forms Usage Bar — requested under usage cards */}
           {!isSuperAdmin && usageData && (() => {
             const used = usageData.usage?.forms ?? forms.length ?? 0;
             const max = usageData.limits?.maxForms ?? null;
             const isUnlimited = max == null;
             const pct = !isUnlimited && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
-            const unlimitedPct = used > 0 ? Math.min(100, 20 + used * 5) : 0;
+            const unlimitedPct = used > 0 ? 2 : 0;
             const isAtLimit = !isUnlimited && max > 0 && used >= max;
             const isNearLimit = !isUnlimited && pct >= 80 && !isAtLimit;
             const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
@@ -581,7 +643,7 @@ export default function Sidebar({
             </>
           )}
 
-          {folders.length > 0 && (
+          {(!isSuperAdmin || folders.length > 0) && (
             <>
               <li className="nav-item nav-category">Folders</li>
               {folders.map((folder) => {

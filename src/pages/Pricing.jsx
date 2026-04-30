@@ -170,7 +170,7 @@ export default function Pricing() {
     };
   }, [searchParams, setSearchParams, refreshProfile, applyAuthUpdate]);
 
-  const startCheckout = async (plan) => {
+  const startCheckout = async (plan, mode = "subscription") => {
     setCheckoutLoading(plan);
     try {
       const token = localStorage.getItem("authToken");
@@ -184,7 +184,7 @@ export default function Pricing() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, mode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
