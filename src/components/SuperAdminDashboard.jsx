@@ -35,6 +35,7 @@ export default function SuperAdminDashboard({
 }) {
   const users = Number(metrics?.users || 0);
   const forms = Number(metrics?.forms || 0);
+  const folders = Number(metrics?.folders || 0);
   const planCounts = metrics?.plans?.counts || { free: 0, pro: 0, business: 0 };
   const totalPlans = Number(metrics?.plans?.total || 0);
   const paidPlans = Number(planCounts.pro || 0) + Number(planCounts.business || 0);
@@ -60,49 +61,61 @@ export default function SuperAdminDashboard({
       </div>
 
       <div className="row g-3">
-        <div className="col-md-4">
+        <div className="col-md-3">
           <div
-            className="card shadow-sm border-0 p-4 h-100"
+            className="card shadow-sm border-0 p-3 h-100"
             onClick={onGoUsers}
             style={{ cursor: "pointer" }}
           >
             <div className="d-flex align-items-start justify-content-between">
               <div>
-                <h6 className="text-muted small text-uppercase fw-bold mb-2">Total Vendors</h6>
-                <h2 className="mb-0">{loading ? "..." : users}</h2>
+                <h6 className="text-muted small text-uppercase fw-bold mb-2" style={{ fontSize: '10px' }}>Total Vendors</h6>
+                <h3 className="mb-0">{loading ? "..." : users}</h3>
               </div>
-              <span className="badge bg-primary-subtle text-primary rounded-pill">Vendors</span>
+              <span className="badge bg-primary-subtle text-primary rounded-pill" style={{ fontSize: '10px' }}>Vendors</span>
             </div>
           </div>
         </div>
 
-        <div className="col-md-4">
+        <div className="col-md-3">
           <div
-            className="card shadow-sm border-0 p-4 h-100"
+            className="card shadow-sm border-0 p-3 h-100"
             onClick={onGoForms}
             style={{ cursor: "pointer" }}
           >
             <div className="d-flex align-items-start justify-content-between">
               <div>
-                <h6 className="text-muted small text-uppercase fw-bold mb-2">Total Forms</h6>
-                <h2 className="mb-0">{loading ? "..." : forms}</h2>
+                <h6 className="text-muted small text-uppercase fw-bold mb-2" style={{ fontSize: '10px' }}>Total Forms</h6>
+                <h3 className="mb-0">{loading ? "..." : forms}</h3>
               </div>
-              <span className="badge bg-success-subtle text-success rounded-pill">Forms</span>
+              <span className="badge bg-success-subtle text-success rounded-pill" style={{ fontSize: '10px' }}>Forms</span>
             </div>
           </div>
         </div>
 
-        <div className="col-md-4">
-          <div className="card shadow-sm border-0 p-4 h-100">
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
             <div className="d-flex align-items-start justify-content-between">
               <div>
-                <h6 className="text-muted small text-uppercase fw-bold mb-2">Total Plans</h6>
-                <h2 className="mb-0">{loading ? "..." : totalPlans}</h2>
-                <div className="text-muted mt-1" style={{ fontSize: 13 }}>
+                <h6 className="text-muted small text-uppercase fw-bold mb-2" style={{ fontSize: '10px' }}>Total Folders</h6>
+                <h3 className="mb-0">{loading ? "..." : folders}</h3>
+              </div>
+              <span className="badge bg-info-subtle text-info rounded-pill" style={{ fontSize: '10px' }}>Folders</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3 h-100">
+            <div className="d-flex align-items-start justify-content-between">
+              <div>
+                <h6 className="text-muted small text-uppercase fw-bold mb-2" style={{ fontSize: '10px' }}>Total Plans</h6>
+                <h3 className="mb-0">{loading ? "..." : totalPlans}</h3>
+                <div className="text-muted mt-1" style={{ fontSize: 11 }}>
                   Paid: <span className="fw-semibold">{loading ? "..." : paidPlans}</span>
                 </div>
               </div>
-              <span className="badge bg-warning-subtle text-warning rounded-pill">Plans</span>
+              <span className="badge bg-warning-subtle text-warning rounded-pill" style={{ fontSize: '10px' }}>Plans</span>
             </div>
           </div>
         </div>

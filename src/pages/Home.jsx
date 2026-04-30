@@ -10,6 +10,21 @@ import AdminFormsTable from "../components/AdminFormsTable.jsx";
 import Pricing from "./Pricing.jsx";
 import SuperAdminDashboard from "../components/SuperAdminDashboard.jsx";
 
+const LucideIcon = ({ name, className = "", style = {} }) => {
+  useEffect(() => {
+    if (window.lucide) window.lucide.createIcons();
+  }, [name]);
+  return (
+    <span
+      className={`d-flex align-items-center justify-content-center ${className}`}
+      style={{ width: "18px", height: "18px", ...style }}
+      dangerouslySetInnerHTML={{
+        __html: `<i data-lucide="${name}" stroke-width="2"></i>`,
+      }}
+    />
+  );
+};
+
 export default function Home() {
   const { formId } = useParams();
   const navigate = useNavigate();
@@ -23,7 +38,7 @@ export default function Home() {
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editJoined] = useState("");
+  const [editJoined, setEditJoined] = useState("");
   const [editLives] = useState("");
   const [editWebsite] = useState("");
   const [editAbout] = useState("");
@@ -314,6 +329,7 @@ export default function Home() {
       setEditLastName(parts.join(" ") || "");
     }
     setEditEmail(userMeta?.email || currentUser?.email || "");
+    setEditJoined(userMeta?.joined || "");
   }, [userMeta, showEditProfile, currentUser?.email]);
 
   const profileName = userMeta?.name || "User";
@@ -456,20 +472,7 @@ export default function Home() {
     }
   };
 
-  const LucideIcon = ({ name, className = "", style = {} }) => {
-    useEffect(() => {
-      if (window.lucide) window.lucide.createIcons();
-    }, [name]);
-    return (
-      <span
-        className={`d-flex align-items-center justify-content-center ${className}`}
-        style={{ width: "18px", height: "18px", ...style }}
-        dangerouslySetInnerHTML={{
-          __html: `<i data-lucide="${name}" stroke-width="2"></i>`,
-        }}
-      />
-    );
-  };
+
 
   const handleSelectForm = (form) => {
     setShowProfileView(false);
