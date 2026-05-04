@@ -179,6 +179,11 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     enabled: false,
     body: "",
   });
+  const [autoresponderDraft, setAutoresponderDraft] = useState({
+    enabled: false,
+    subject: "",
+    body: "",
+  });
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [viewingSubmission, setViewingSubmission] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -310,6 +315,11 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       enabled: form.settings?.customTemplateEnabled || false,
       body: form.settings?.customTemplateBody || "",
     });
+    setAutoresponderDraft({
+      enabled: form.settings?.autoresponderEnabled || false,
+      subject: form.settings?.autoresponderSubject || "Thank you for your submission!",
+      body: form.settings?.autoresponderBody || "We have received your submission. Thank you!",
+    });
   }, [form]);
 
   const isNameTaken = (name, excludeFormId) => {
@@ -392,6 +402,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             notificationEmail: emailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
+            autoresponderEnabled: autoresponderDraft.enabled,
+            autoresponderSubject: autoresponderDraft.subject,
+            autoresponderBody: autoresponderDraft.body,
           },
         }),
       });
@@ -914,15 +927,29 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                       </button>
                     </li>
 
-                    <li className="nav-item">
-                      <button 
-                        className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
-                        onClick={() => setEmailModalTab("customTemplate")}
-                        style={{ background: "transparent" }}
-                      >
-                        Custom Template
-                      </button>
-                    </li>
+                    {userMeta?.subscriptionPlan === "business" && (
+                      <li className="nav-item">
+                        <button 
+                          className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                          onClick={() => setEmailModalTab("customTemplate")}
+                          style={{ background: "transparent" }}
+                        >
+                          Custom Template
+                        </button>
+                      </li>
+                    )}
+
+                    {(userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
+                      <li className="nav-item">
+                        <button 
+                          className={`nav-link border-0 px-3 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                          onClick={() => setEmailModalTab("autoresponder")}
+                          style={{ background: "transparent" }}
+                        >
+                          Autoresponder
+                        </button>
+                      </li>
+                    )}
                   </ul>
                 </div>
 
@@ -1037,7 +1064,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                   )}
 
 
-                  {emailModalTab === "customTemplate" && (
+                  {emailModalTab === "customTemplate" && userMeta?.subscriptionPlan === "business" && (
                     <>
                       <div className="form-check form-switch mb-3">
                         <input
@@ -1135,6 +1162,84 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                       </div>
 
                       
+                    </>
+                  )}
+
+
+                  {emailModalTab === "autoresponder" && (userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
+                    <>
+                      <div className="form-check form-switch mb-3">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="autoresponderEnabled"
+                          checked={autoresponderDraft.enabled}
+                          onChange={(e) =>
+                            setAutoresponderDraft({ ...autoresponderDraft, enabled: e.target.checked })
+                          }
+                        />
+                        <label className="form-check-label small fw-bold" htmlFor="autoresponderEnabled">
+                          Enable Autoresponder (Thank You Message)
+                        </label>
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                          Email Subject
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          style={{ fontSize: 12 }}
+                          value={autoresponderDraft.subject}
+                          onChange={(e) => setAutoresponderDraft({ ...autoresponderDraft, subject: e.target.value })}
+                          disabled={!autoresponderDraft.enabled}
+                          placeholder="e.g. Thanks for your submission!"
+                        />
+                      </div>
+
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                          Message Body
+                        </label>
+                      </div>
+
+                      <div className="mb-2 fd-quill-container">
+                        <ReactQuill
+                          theme="snow"
+                          value={autoresponderDraft.body}
+                          onChange={(content) => setAutoresponderDraft({ ...autoresponderDraft, body: content })}
+                          modules={quillModules}
+                          formats={quillFormats}
+                          placeholder="Type your thank you message here..."
+                          readOnly={!autoresponderDraft.enabled}
+                        />
+                      </div>
+                      
+                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
+                        <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
+                          <LucideIcon name="info" style={{ width: 14, height: 14 }} />
+                          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.03em" }}>Available Placeholders</span>
+                        </div>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
+                          {['{{AllFields}}', '{{FormName}}', '{{SubmittedAt}}'].map(tag => (
+                            <code 
+                              key={tag}
+                              className="bg-white border rounded px-1 text-primary" 
+                              style={{ cursor: "pointer", fontSize: 10 }}
+                              onClick={() => {
+                                copyToClipboard(tag);
+                                toast.success(`Copied ${tag}`);
+                              }}
+                            >
+                              {tag}
+                            </code>
+                          ))}
+                        </div>
+                        <div className="text-muted" style={{ fontSize: 10 }}>
+                          Tip: Use <code>{`{{FieldName}}`}</code> to insert a specific field value.
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
