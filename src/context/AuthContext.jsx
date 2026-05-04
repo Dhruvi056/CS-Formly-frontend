@@ -35,7 +35,16 @@ export function AuthProvider({ children }) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error("Non-JSON response received:", text);
+      throw new Error(`Server returned non-JSON response. This often means the backend is not running or the request was blocked. Status: ${response.status}`);
+    }
+
     if (!response.ok) {
       throw new Error(data.message || data.error || "Authentication failed");
     }
