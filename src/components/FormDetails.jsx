@@ -503,6 +503,11 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             notificationEmail: emailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
+            autoresponderEnabled: autoresponderDraft.enabled,
+            autoresponderSubject: autoresponderDraft.subject,
+            autoresponderBody: autoresponderDraft.body,
+            autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
+            autoresponderAttachmentName: autoresponderDraft.attachmentName,
           },
         });
         setShowEmailModal(false);
