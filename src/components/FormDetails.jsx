@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -7,17 +7,7 @@ import 'react-quill/dist/quill.snow.css';
 import { normalizeMongoId } from "../utils/mongoIds.js";
 import "../styles/components/form-details-toolbar.css";
 
-// ── Quill Modules ──────────────────────────────────────────────────────────
-const quillModules = {
-  toolbar: [
-    [{ header: [1, 2, false] }],
-    ["bold", "italic", "underline", "strike", "blockquote"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["link", "image"],
-    ["clean"],
-  ],
-};
-
+// ── Quill Formats ──────────────────────────────────────────────────────────
 const quillFormats = [
   "header",
   "bold",
@@ -183,8 +173,23 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     enabled: false,
     subject: "",
     body: "",
+    attachmentUrl: "",
+    attachmentName: "",
   });
   const [isHtmlMode, setIsHtmlMode] = useState(false);
+
+  // Body scroll lock when email modal is open
+  useEffect(() => {
+    if (showEmailModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showEmailModal]);
+
   const [viewingSubmission, setViewingSubmission] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -207,6 +212,85 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       console.error("Failed to copy:", err);
     }
   };
+
+  const quillRef = useRef(null);
+  const autoresponderQuillRef = useRef(null);
+
+  const imageHandler = useCallback(async (ref) => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      // Check file size (e.g., 5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image too large (max 5MB)");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const loadingToast = toast.loading("Uploading image...");
+      try {
+        const token = localStorage.getItem("authToken");
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (res.ok) {
+          const { url } = await res.json();
+          const quill = ref.current.getEditor();
+          const range = quill.getSelection();
+          quill.insertEmbed(range.index, "image", url);
+          toast.success("Image uploaded!");
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          toast.error(errData.error || errData.message || "Upload failed.");
+        }
+      } catch (err) {
+        toast.error("Error uploading image.");
+      } finally {
+        toast.dismiss(loadingToast);
+      }
+    };
+  }, []);
+
+  const memoQuillModules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [1, 2, false] }],
+        ["bold", "italic", "underline", "strike", "blockquote"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "image"],
+        ["clean"],
+      ],
+      handlers: {
+        image: () => imageHandler(quillRef),
+      },
+    },
+  }), [imageHandler]);
+
+  const memoAutoresponderQuillModules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ header: [1, 2, false] }],
+        ["bold", "italic", "underline", "strike", "blockquote"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "image"],
+        ["clean"],
+      ],
+      handlers: {
+        image: () => imageHandler(autoresponderQuillRef),
+      },
+    },
+  }), [imageHandler]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -319,6 +403,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       enabled: form.settings?.autoresponderEnabled || false,
       subject: form.settings?.autoresponderSubject || "Thank you for your submission!",
       body: form.settings?.autoresponderBody || "We have received your submission. Thank you!",
+      attachmentUrl: form.settings?.autoresponderAttachmentUrl || "",
+      attachmentName: form.settings?.autoresponderAttachmentName || "",
     });
   }, [form]);
 
@@ -405,6 +491,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             autoresponderEnabled: autoresponderDraft.enabled,
             autoresponderSubject: autoresponderDraft.subject,
             autoresponderBody: autoresponderDraft.body,
+            autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
+            autoresponderAttachmentName: autoresponderDraft.attachmentName,
           },
         }),
       });
@@ -1126,9 +1214,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         ) : (
                           <ReactQuill
                             theme="snow"
+                            ref={quillRef}
                             value={customTemplateDraft.body}
                             onChange={(content) => setCustomTemplateDraft({ ...customTemplateDraft, body: content })}
-                            modules={quillModules}
+                            modules={memoQuillModules}
                             formats={quillFormats}
                             placeholder="Design your notification email template..."
                             readOnly={!customTemplateDraft.enabled}
@@ -1202,14 +1291,32 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
                           Message Body
                         </label>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-decoration-none p-0 text-danger"
+                          style={{ fontSize: 10, fontWeight: 600 }}
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to clear the entire message body?")) {
+                              setAutoresponderDraft({ ...autoresponderDraft, body: "" });
+                            }
+                          }}
+                        >
+                          Clear Body
+                        </button>
+                      </div>
+
+                      <div className="alert alert-warning py-2 px-3 mb-2 d-flex align-items-start gap-2" style={{ fontSize: 10, border: "none", background: "#fffbeb", color: "#92400e", borderRadius: "6px" }}>
+                        <LucideIcon name="alert-triangle" style={{ width: 12, height: 12, marginTop: 2 }} />
+                        <span><strong>Warning:</strong> Adding large images directly can make the email very large, causing it to be "clipped" (hidden) by Gmail. We recommend using smaller images or links.</span>
                       </div>
 
                       <div className="mb-2 fd-quill-container">
                         <ReactQuill
                           theme="snow"
+                          ref={autoresponderQuillRef}
                           value={autoresponderDraft.body}
                           onChange={(content) => setAutoresponderDraft({ ...autoresponderDraft, body: content })}
-                          modules={quillModules}
+                          modules={memoAutoresponderQuillModules}
                           formats={quillFormats}
                           placeholder="Type your thank you message here..."
                           readOnly={!autoresponderDraft.enabled}
@@ -1239,6 +1346,77 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         <div className="text-muted" style={{ fontSize: 10 }}>
                           Tip: Use <code>{`{{FieldName}}`}</code> to insert a specific field value.
                         </div>
+                      </div>
+
+                      <div className="mt-3 pt-3 border-top">
+                        <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                          Email Attachment (PDF/Document)
+                        </label>
+                        <div className="d-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                            style={{ fontSize: 11, fontWeight: 600 }}
+                            disabled={!autoresponderDraft.enabled}
+                            onClick={() => {
+                              const input = document.createElement("input");
+                              input.type = "file";
+                              input.accept = ".pdf,.doc,.docx,.zip";
+                              input.onchange = async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                
+                                const t = toast.loading("Uploading attachment...");
+                                try {
+                                  const res = await fetch("/api/upload", {
+                                    method: "POST",
+                                    headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
+                                    body: formData,
+                                  });
+                                  if (res.ok) {
+                                    const { url } = await res.json();
+                                    setAutoresponderDraft(prev => ({ 
+                                      ...prev, 
+                                      attachmentUrl: url,
+                                      attachmentName: file.name
+                                    }));
+                                    toast.success("Attachment added!");
+                                  } else {
+                                    toast.error("Upload failed.");
+                                  }
+                                } catch (err) {
+                                  toast.error("Upload error.");
+                                } finally {
+                                  toast.dismiss(t);
+                                }
+                              };
+                              input.click();
+                            }}
+                          >
+                            <LucideIcon name="paperclip" style={{ width: 12, height: 12 }} />
+                            {autoresponderDraft.attachmentUrl ? "Change Attachment" : "Attach PDF/File"}
+                          </button>
+                          
+                          {autoresponderDraft.attachmentUrl && (
+                            <div className="d-flex align-items-center gap-2 bg-light rounded px-2 py-1 flex-grow-1" style={{ fontSize: 11, minWidth: 0 }}>
+                              <LucideIcon name="file-text" className="text-secondary flex-shrink-0" style={{ width: 12, height: 12 }} />
+                              <span className="text-truncate text-secondary">{autoresponderDraft.attachmentName || "Attached file"}</span>
+                              <button 
+                                type="button" 
+                                className="btn btn-link p-0 text-danger ms-auto"
+                                onClick={() => setAutoresponderDraft(prev => ({ ...prev, attachmentUrl: "", attachmentName: "" }))}
+                              >
+                                <LucideIcon name="x" style={{ width: 12, height: 12 }} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-muted mt-1 mb-0" style={{ fontSize: 9 }}>
+                          Max size 5MB. This file will be sent as an attachment to all respondents.
+                        </p>
                       </div>
                     </>
                   )}

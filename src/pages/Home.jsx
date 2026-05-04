@@ -321,6 +321,26 @@ export default function Home() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Body scroll lock when any modal/popup is open
+  useEffect(() => {
+    const isAnyModalOpen = 
+      showPasswordModal || 
+      showSMTPModal || 
+      showDeleteModal || 
+      showCreatePopup || 
+      showEditProfile;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showPasswordModal, showSMTPModal, showDeleteModal, showCreatePopup, showEditProfile]);
+
   useEffect(() => {
     if (showEditProfile) return;
     if (userMeta?.name) {

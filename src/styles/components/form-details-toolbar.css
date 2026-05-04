@@ -313,3 +313,12 @@
 .fd-pro-copied.is-on {
   opacity: 1;
 }
+
+/* Ensure Quill tooltips (like the link popup) are visible in modals */
+.ql-tooltip {
+  z-index: 10000 !important;
+}
+
+.fd-quill-container .ql-container {
+  min-height: 200px;
+}
