@@ -175,6 +175,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     body: "",
     attachmentUrl: "",
     attachmentName: "",
+    attachmentRules: [],
   });
   const [isHtmlMode, setIsHtmlMode] = useState(false);
 
@@ -405,6 +406,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       body: form.settings?.autoresponderBody || "We have received your submission. Thank you!",
       attachmentUrl: form.settings?.autoresponderAttachmentUrl || "",
       attachmentName: form.settings?.autoresponderAttachmentName || "",
+      attachmentRules: Array.isArray(form.settings?.autoresponderAttachmentRules)
+        ? form.settings.autoresponderAttachmentRules.map((rule) => ({
+          key: rule?.key || "",
+          attachmentUrl: rule?.attachmentUrl || "",
+          attachmentName: rule?.attachmentName || "",
+        }))
+        : [],
     });
   }, [form]);
 
@@ -493,6 +501,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             autoresponderBody: autoresponderDraft.body,
             autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
             autoresponderAttachmentName: autoresponderDraft.attachmentName,
+            autoresponderAttachmentRules: (autoresponderDraft.attachmentRules || [])
+              .map((rule) => ({
+                key: String(rule?.key || "").trim(),
+                attachmentUrl: String(rule?.attachmentUrl || "").trim(),
+                attachmentName: String(rule?.attachmentName || "").trim(),
+              }))
+              .filter((rule) => rule.key && rule.attachmentUrl),
           },
         }),
       });
@@ -508,6 +523,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             autoresponderBody: autoresponderDraft.body,
             autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
             autoresponderAttachmentName: autoresponderDraft.attachmentName,
+            autoresponderAttachmentRules: (autoresponderDraft.attachmentRules || [])
+              .map((rule) => ({
+                key: String(rule?.key || "").trim(),
+                attachmentUrl: String(rule?.attachmentUrl || "").trim(),
+                attachmentName: String(rule?.attachmentName || "").trim(),
+              }))
+              .filter((rule) => rule.key && rule.attachmentUrl),
           },
         });
         setShowEmailModal(false);
@@ -581,7 +603,14 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   normalizedSubmissions.forEach((s) => {
     if (s.data) Object.keys(s.data).forEach((f) => allFields.add(f));
   });
-  const fields = Array.from(allFields).filter((f) => f !== "_gotcha");
+  const fields = Array.from(allFields).filter((f) => {
+    const lower = f.toLowerCase();
+    return (
+      f !== "_gotcha" &&
+      lower !== "cf-turnstile-response" &&
+      lower !== "g-recaptcha-response"
+    );
+  });
 
   const openFile = async (url, fallbackLabel, submissionId, fieldName) => {
     try {
@@ -782,7 +811,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             ) : (
               <div className="table-responsive flex-grow-1">
                 <table className="table table-hover align-middle">
-                  <thead className="bg-light sticky-top">
+                  <thead className="bg-light sticky-top" style={{ zIndex: 5 }}>
                     <tr>
                       {fields.map((f) => (
                         <th
@@ -1008,10 +1037,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                       onClick={() => setShowEmailModal(false)}
                     />
                   </div>
-                  
+
                   <ul className="nav nav-tabs border-bottom-0 gap-1" style={{ fontSize: 13 }}>
                     <li className="nav-item">
-                      <button 
+                      <button
                         className={`nav-link border-0 px-3 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
                         onClick={() => setEmailModalTab("notifications")}
                         style={{ background: "transparent" }}
@@ -1022,7 +1051,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
 
                     {userMeta?.subscriptionPlan === "business" && (
                       <li className="nav-item">
-                        <button 
+                        <button
                           className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
                           onClick={() => setEmailModalTab("customTemplate")}
                           style={{ background: "transparent" }}
@@ -1034,7 +1063,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
 
                     {(userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
                       <li className="nav-item">
-                        <button 
+                        <button
                           className={`nav-link border-0 px-3 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
                           onClick={() => setEmailModalTab("autoresponder")}
                           style={{ background: "transparent" }}
@@ -1229,7 +1258,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           />
                         )}
                       </div>
-                      
+
                       <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
                         <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
                           <LucideIcon name="info" style={{ width: 14, height: 14 }} />
@@ -1237,9 +1266,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         </div>
                         <div className="d-flex flex-wrap gap-2 mb-2">
                           {['{{AllFields}}', '{{FormName}}', '{{DashboardUrl}}', '{{SubmittedAt}}', '{{IpAddress}}'].map(tag => (
-                            <code 
+                            <code
                               key={tag}
-                              className="bg-white border rounded px-1 text-primary" 
+                              className="bg-white border rounded px-1 text-primary"
                               style={{ cursor: "pointer", fontSize: 10 }}
                               onClick={() => {
                                 copyToClipboard(tag);
@@ -1255,7 +1284,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         </div>
                       </div>
 
-                      
+
                     </>
                   )}
 
@@ -1327,7 +1356,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           readOnly={!autoresponderDraft.enabled}
                         />
                       </div>
-                      
+
                       <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
                         <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
                           <LucideIcon name="info" style={{ width: 14, height: 14 }} />
@@ -1335,9 +1364,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         </div>
                         <div className="d-flex flex-wrap gap-2 mb-2">
                           {['{{AllFields}}', '{{FormName}}', '{{SubmittedAt}}'].map(tag => (
-                            <code 
+                            <code
                               key={tag}
-                              className="bg-white border rounded px-1 text-primary" 
+                              className="bg-white border rounded px-1 text-primary"
                               style={{ cursor: "pointer", fontSize: 10 }}
                               onClick={() => {
                                 copyToClipboard(tag);
@@ -1355,7 +1384,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
 
                       <div className="mt-3 pt-3 border-top">
                         <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                          Email Attachment (PDF/Document)
+                          Default Email Attachment (PDF/Document)
                         </label>
                         <div className="d-flex align-items-center gap-2">
                           <button
@@ -1370,10 +1399,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                               input.onchange = async (e) => {
                                 const file = e.target.files[0];
                                 if (!file) return;
-                                
+
                                 const formData = new FormData();
                                 formData.append("file", file);
-                                
+
                                 const t = toast.loading("Uploading attachment...");
                                 try {
                                   const res = await fetch("/api/upload", {
@@ -1383,8 +1412,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                   });
                                   if (res.ok) {
                                     const { url } = await res.json();
-                                    setAutoresponderDraft(prev => ({ 
-                                      ...prev, 
+                                    setAutoresponderDraft(prev => ({
+                                      ...prev,
                                       attachmentUrl: url,
                                       attachmentName: file.name
                                     }));
@@ -1404,13 +1433,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                             <LucideIcon name="paperclip" style={{ width: 12, height: 12 }} />
                             {autoresponderDraft.attachmentUrl ? "Change Attachment" : "Attach PDF/File"}
                           </button>
-                          
+
                           {autoresponderDraft.attachmentUrl && (
                             <div className="d-flex align-items-center gap-2 bg-light rounded px-2 py-1 flex-grow-1" style={{ fontSize: 11, minWidth: 0 }}>
                               <LucideIcon name="file-text" className="text-secondary flex-shrink-0" style={{ width: 12, height: 12 }} />
                               <span className="text-truncate text-secondary">{autoresponderDraft.attachmentName || "Attached file"}</span>
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 className="btn btn-link p-0 text-danger ms-auto"
                                 onClick={() => setAutoresponderDraft(prev => ({ ...prev, attachmentUrl: "", attachmentName: "" }))}
                               >
@@ -1419,8 +1448,125 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                             </div>
                           )}
                         </div>
-                        <p className="text-muted mt-1 mb-0" style={{ fontSize: 9 }}>
-                          Max size 5MB. This file will be sent as an attachment to all respondents.
+
+                        <div className="mt-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                              ID based attachments
+                            </label>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              style={{ fontSize: 10 }}
+                              disabled={!autoresponderDraft.enabled}
+                              onClick={() =>
+                                setAutoresponderDraft((prev) => ({
+                                  ...prev,
+                                  attachmentRules: [...(prev.attachmentRules || []), { key: "", attachmentUrl: "", attachmentName: "" }],
+                                }))
+                              }
+                            >
+                              + Add ID
+                            </button>
+                          </div>
+
+                          {(autoresponderDraft.attachmentRules || []).length === 0 ? (
+                            <div className="text-muted small">No ID rules added yet.</div>
+                          ) : (
+                            <div className="d-flex flex-column gap-2">
+                              {(autoresponderDraft.attachmentRules || []).map((rule, idx) => (
+                                <div key={`rule-${idx}`} className="border rounded p-2 bg-light">
+                                  <div className="d-flex gap-2 align-items-center mb-2">
+                                    <input
+                                      type="text"
+                                      className="form-control form-control-sm"
+                                      placeholder="Enter ID (e.g. id-1)"
+                                      value={rule.key || ""}
+                                      disabled={!autoresponderDraft.enabled}
+                                      onChange={(e) =>
+                                        setAutoresponderDraft((prev) => {
+                                          const next = [...(prev.attachmentRules || [])];
+                                          next[idx] = { ...next[idx], key: e.target.value };
+                                          return { ...prev, attachmentRules: next };
+                                        })
+                                      }
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-danger"
+                                      disabled={!autoresponderDraft.enabled}
+                                      onClick={() =>
+                                        setAutoresponderDraft((prev) => ({
+                                          ...prev,
+                                          attachmentRules: (prev.attachmentRules || []).filter((_, i) => i !== idx),
+                                        }))
+                                      }
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                  <div className="d-flex gap-2 align-items-center">
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline-primary btn-sm"
+                                      disabled={!autoresponderDraft.enabled}
+                                      onClick={() => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = ".pdf,.doc,.docx,.zip";
+                                        input.onchange = async (e) => {
+                                          const file = e.target.files[0];
+                                          if (!file) return;
+
+                                          const formData = new FormData();
+                                          formData.append("file", file);
+
+                                          const t = toast.loading("Uploading attachment...");
+                                          try {
+                                            const res = await fetch("/api/upload", {
+                                              method: "POST",
+                                              headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
+                                              body: formData,
+                                            });
+                                            if (!res.ok) {
+                                              toast.error("Upload failed.");
+                                              return;
+                                            }
+                                            const { url } = await res.json();
+                                            setAutoresponderDraft((prev) => {
+                                              const next = [...(prev.attachmentRules || [])];
+                                              next[idx] = {
+                                                ...next[idx],
+                                                attachmentUrl: url,
+                                                attachmentName: file.name,
+                                              };
+                                              return { ...prev, attachmentRules: next };
+                                            });
+                                            toast.success("Attachment added!");
+                                          } catch (err) {
+                                            toast.error("Upload error.");
+                                          } finally {
+                                            toast.dismiss(t);
+                                          }
+                                        };
+                                        input.click();
+                                      }}
+                                    >
+                                      {rule.attachmentUrl ? "Change PDF/File" : "Attach PDF/File"}
+                                    </button>
+
+                                    <span className="small text-muted text-truncate" style={{ maxWidth: 180 }}>
+                                      {rule.attachmentName || "No file selected"}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-muted mt-2 mb-0" style={{ fontSize: 9 }}>
+                          Max size 5MB. If payload has a matching ID, that specific file is sent; otherwise default attachment is used.
                         </p>
                       </div>
                     </>
