@@ -289,6 +289,19 @@ export default function Home() {
     loadForm();
   }, [formId, currentUser, navigate]);
 
+  // Sync notifications: clear notifications for the active form
+  useEffect(() => {
+    if (!formId) return;
+    setNotifications((prev) => {
+      const filtered = prev.filter((n) => n.formId !== formId);
+      const removedCount = prev.length - filtered.length;
+      if (removedCount > 0) {
+        setUnreadCount((count) => Math.max(0, count - removedCount));
+      }
+      return filtered;
+    });
+  }, [formId]);
+
   const clearAllNotifications = async () => {
     const now = Date.now();
     clearBeforeMsRef.current = now;
