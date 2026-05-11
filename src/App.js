@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import { Toaster } from "react-hot-toast";
 
 function PrivateRoute({ children }) {
@@ -18,8 +19,8 @@ function PublicRoute({ children }) {
   const { currentUser, loading } = useAuth();
   const location = useLocation();
   if (loading) return null;
-  // Always allow reset-password page (even if logged in) so links work
-  if (location.pathname === "/reset-password") return children;
+  // Always allow public token/link pages even if logged in
+  if (location.pathname === "/reset-password" || location.pathname === "/verify-email") return children;
   if (!currentUser) return children;
   return <Navigate to="/" replace />;
 }
@@ -95,6 +96,14 @@ function AppRoutes() {
           element={
             <PublicRoute>
               <ResetPassword />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <PublicRoute>
+              <VerifyEmail />
             </PublicRoute>
           }
         />

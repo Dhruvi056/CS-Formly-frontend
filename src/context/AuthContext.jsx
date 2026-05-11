@@ -79,11 +79,12 @@ export function AuthProvider({ children }) {
         role: "vendor_admin", // Default role
       });
 
-      // Persist session to local storage
-      storeSession(userData);
-
-      // Update application state
-      updateAuthState(userData);
+      // Email verification flow: user should verify before login.
+      // Only store session if backend returns a token.
+      if (userData?.token) {
+        storeSession(userData);
+        updateAuthState(userData);
+      }
 
       return userData;
     } catch (error) {

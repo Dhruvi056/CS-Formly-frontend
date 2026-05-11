@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuthWithToast } from "../hooks/useAuthWithToast";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 
 export default function Login() {
@@ -12,6 +12,7 @@ export default function Login() {
   const { login, resetPassword } = useAuthWithToast();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -50,6 +51,16 @@ export default function Login() {
       }, 500);
     }
   }, [currentUser, loginSuccess, navigate]);
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get("verify") === "sent") {
+      toast.success("Verification email sent. Please check your inbox.");
+    }
+    if (query.get("verified") === "1") {
+      toast.success("Email verified. You can log in now.");
+    }
+  }, [location.search]);
 
   /**
    * Handles the login form submission.
@@ -102,7 +113,9 @@ export default function Login() {
       const errorMessage = err.message || "Failed to log in";
       
       // Handle common auth errors
-      if (errorMessage.toLowerCase().includes("invalid") || errorMessage.toLowerCase().includes("incorrect")) {
+      if (errorMessage.toLowerCase().includes("verify your email")) {
+        setFormError("Please verify your email first. Check your inbox for verification link.");
+      } else if (errorMessage.toLowerCase().includes("invalid") || errorMessage.toLowerCase().includes("incorrect")) {
         setFormError("Invalid email or password. Please check your credentials.");
       } else if (errorMessage.toLowerCase().includes("too many")) {
         setFormError("Too many attempts. Please try again later.");
