@@ -90,8 +90,8 @@ export default function Signup() {
       
       await signup(email, password, fullName);
       
-      toast.success("Welcome! Your account has been created.", { position: 'top-right' });
-      navigate("/");
+      toast.success("Account created. Please verify your email before logging in.", { position: 'top-right' });
+      navigate("/login?verify=sent");
       
     } catch (err) {
       console.error("Signup error:", err);
