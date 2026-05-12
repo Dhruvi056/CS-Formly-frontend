@@ -164,7 +164,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const [emailModalTab, setEmailModalTab] = useState("notifications"); // "notifications" or "autoresponder"
   const [emailInput, setEmailInput] = useState("");
   const [emailsList, setEmailsList] = useState([]);
-  const [emailLoading, setEmailLoading] = useState(false);
+
   const [customTemplateDraft, setCustomTemplateDraft] = useState({
     enabled: false,
     body: "",
@@ -402,8 +402,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     });
     setAutoresponderDraft({
       enabled: form.settings?.autoresponderEnabled || false,
-      subject: form.settings?.autoresponderSubject || "Thank you for your submission!",
-      body: form.settings?.autoresponderBody || "We have received your submission. Thank you!",
+      subject: form.settings?.autoresponderSubject || "Thank you! Your submission has been received!",
+      body: form.settings?.autoresponderBody || "Thank you for your submission. Your response has been received successfully.",
       attachmentUrl: form.settings?.autoresponderAttachmentUrl || "",
       attachmentName: form.settings?.autoresponderAttachmentName || "",
       attachmentRules: Array.isArray(form.settings?.autoresponderAttachmentRules)
@@ -411,6 +411,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           key: rule?.key || "",
           attachmentUrl: rule?.attachmentUrl || "",
           attachmentName: rule?.attachmentName || "",
+          subject: rule?.subject || "",
+          body: rule?.body || "",
         }))
         : [],
     });
@@ -506,8 +508,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 key: String(rule?.key || "").trim(),
                 attachmentUrl: String(rule?.attachmentUrl || "").trim(),
                 attachmentName: String(rule?.attachmentName || "").trim(),
+                subject: String(rule?.subject || "").trim(),
+                body: String(rule?.body || "").trim(),
               }))
-              .filter((rule) => rule.key && rule.attachmentUrl),
+              .filter((rule) => rule.key && (rule.attachmentUrl || rule.subject || rule.body)),
           },
         }),
       });
@@ -528,8 +532,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 key: String(rule?.key || "").trim(),
                 attachmentUrl: String(rule?.attachmentUrl || "").trim(),
                 attachmentName: String(rule?.attachmentName || "").trim(),
+                subject: String(rule?.subject || "").trim(),
+                body: String(rule?.body || "").trim(),
               }))
-              .filter((rule) => rule.key && rule.attachmentUrl),
+              .filter((rule) => rule.key && (rule.attachmentUrl || rule.subject || rule.body)),
           },
         });
         setShowEmailModal(false);
@@ -784,9 +790,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         <div className="card shadow-sm border-0 flex-grow-1 overflow-hidden">
           <div className="card-body d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h6 className="card-title mb-0">
-                Submissions ({filteredSubmissions.length})
-              </h6>
+                <h6 className="card-title mb-0">
+                  Submissions ({filteredSubmissions.length})
+                </h6>
               <button
                 className="btn btn-sm btn-outline-primary"
                 onClick={fetchSubmissions}
@@ -1462,7 +1468,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                               onClick={() =>
                                 setAutoresponderDraft((prev) => ({
                                   ...prev,
-                                  attachmentRules: [...(prev.attachmentRules || []), { key: "", attachmentUrl: "", attachmentName: "" }],
+                                  attachmentRules: [...(prev.attachmentRules || []), { key: "", attachmentUrl: "", attachmentName: "", subject: "", body: "" }],
                                 }))
                               }
                             >
@@ -1475,14 +1481,15 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           ) : (
                             <div className="d-flex flex-column gap-2">
                               {(autoresponderDraft.attachmentRules || []).map((rule, idx) => (
-                                <div key={`rule-${idx}`} className="border rounded p-2 bg-light">
+                                <div key={`rule-${idx}`} className="border rounded p-2 bg-light shadow-sm">
                                   <div className="d-flex gap-2 align-items-center mb-2">
                                     <input
                                       type="text"
                                       className="form-control form-control-sm"
-                                      placeholder="Enter ID (e.g. id-1)"
+                                      placeholder="Enter ID (e.g. JOBID01)"
                                       value={rule.key || ""}
                                       disabled={!autoresponderDraft.enabled}
+                                      style={{ fontWeight: 600 }}
                                       onChange={(e) =>
                                         setAutoresponderDraft((prev) => {
                                           const next = [...(prev.attachmentRules || [])];
@@ -1505,10 +1512,53 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                       Remove
                                     </button>
                                   </div>
+
+                                  <div className="mb-2">
+                                    <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 9, fontWeight: 700 }}>
+                                      Email Subject for this ID
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="form-control form-control-sm"
+                                      placeholder="Custom subject for this ID..."
+                                      value={rule.subject || ""}
+                                      disabled={!autoresponderDraft.enabled}
+                                      onChange={(e) =>
+                                        setAutoresponderDraft((prev) => {
+                                          const next = [...(prev.attachmentRules || [])];
+                                          next[idx] = { ...next[idx], subject: e.target.value };
+                                          return { ...prev, attachmentRules: next };
+                                        })
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="mb-2">
+                                    <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 9, fontWeight: 700 }}>
+                                      Message Body for this ID
+                                    </label>
+                                    <textarea
+                                      className="form-control form-control-sm"
+                                      placeholder="Custom message body (HTML supported)..."
+                                      rows={2}
+                                      style={{ fontSize: 11 }}
+                                      value={rule.body || ""}
+                                      disabled={!autoresponderDraft.enabled}
+                                      onChange={(e) =>
+                                        setAutoresponderDraft((prev) => {
+                                          const next = [...(prev.attachmentRules || [])];
+                                          next[idx] = { ...next[idx], body: e.target.value };
+                                          return { ...prev, attachmentRules: next };
+                                        })
+                                      }
+                                    />
+                                  </div>
+
                                   <div className="d-flex gap-2 align-items-center">
                                     <button
                                       type="button"
                                       className="btn btn-outline-primary btn-sm"
+                                      style={{ fontSize: 10, padding: "2px 8px" }}
                                       disabled={!autoresponderDraft.enabled}
                                       onClick={() => {
                                         const input = document.createElement("input");
@@ -1555,7 +1605,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                       {rule.attachmentUrl ? "Change PDF/File" : "Attach PDF/File"}
                                     </button>
 
-                                    <span className="small text-muted text-truncate" style={{ maxWidth: 180 }}>
+                                    <span className="small text-muted text-truncate" style={{ maxWidth: 180, fontSize: 10 }}>
                                       {rule.attachmentName || "No file selected"}
                                     </span>
                                   </div>
