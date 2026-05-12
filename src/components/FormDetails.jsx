@@ -217,7 +217,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const quillRef = useRef(null);
   const autoresponderQuillRef = useRef(null);
 
-  const imageHandler = useCallback(async (ref) => {
+  const imageHandler = useCallback(async (refOrQuill) => {
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*");
@@ -247,7 +247,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
 
         if (res.ok) {
           const { url } = await res.json();
-          const quill = ref.current.getEditor();
+          const quill = refOrQuill.current ? refOrQuill.current.getEditor() : refOrQuill;
           const range = quill.getSelection();
           quill.insertEmbed(range.index, "image", url);
           toast.success("Image uploaded!");
@@ -1013,7 +1013,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           >
             <div
               className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
-              style={{ maxWidth: 450 }}
+              style={{ maxWidth: 700 }}
             >
               <div
                 className="modal-content border-0 shadow-lg"
@@ -1533,25 +1533,61 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                     />
                                   </div>
 
-                                  <div className="mb-2">
+                                  <div className="mb-2 fd-quill-container">
                                     <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 9, fontWeight: 700 }}>
                                       Message Body for this ID
                                     </label>
-                                    <textarea
-                                      className="form-control form-control-sm"
-                                      placeholder="Custom message body (HTML supported)..."
-                                      rows={2}
-                                      style={{ fontSize: 11 }}
+                                    <ReactQuill
+                                      theme="snow"
                                       value={rule.body || ""}
-                                      disabled={!autoresponderDraft.enabled}
-                                      onChange={(e) =>
+                                      onChange={(content) =>
                                         setAutoresponderDraft((prev) => {
                                           const next = [...(prev.attachmentRules || [])];
-                                          next[idx] = { ...next[idx], body: e.target.value };
+                                          next[idx] = { ...next[idx], body: content };
                                           return { ...prev, attachmentRules: next };
                                         })
                                       }
+                                      modules={{
+                                        toolbar: {
+                                          container: [
+                                            [{ header: [1, 2, false] }],
+                                            ["bold", "italic", "underline", "strike", "blockquote"],
+                                            [{ list: "ordered" }, { list: "bullet" }],
+                                            ["link", "image"],
+                                            ["clean"],
+                                          ],
+                                          handlers: {
+                                            image: function () {
+                                              imageHandler(this.quill);
+                                            },
+                                          },
+                                        },
+                                      }}
+                                      formats={quillFormats}
+                                      placeholder="Custom message body..."
+                                      readOnly={!autoresponderDraft.enabled}
                                     />
+                                    <div className="mt-2 py-1 px-2 rounded" style={{ fontSize: 10, background: "#f0f9ff", border: "1px solid #e0f2fe" }}>
+                                      <div className="d-flex align-items-center gap-1 fw-bold mb-1 text-primary">
+                                        <LucideIcon name="info" style={{ width: 10, height: 10 }} />
+                                        <span style={{ fontSize: 9, textTransform: "uppercase" }}>Placeholders</span>
+                                      </div>
+                                      <div className="d-flex flex-wrap gap-1">
+                                        {['{{AllFields}}', '{{FormName}}', '{{SubmittedAt}}'].map(tag => (
+                                          <code
+                                            key={tag}
+                                            className="bg-white border rounded px-1 text-primary"
+                                            style={{ cursor: "pointer", fontSize: 9 }}
+                                            onClick={() => {
+                                              copyToClipboard(tag);
+                                              toast.success(`Copied ${tag}`);
+                                            }}
+                                          >
+                                            {tag}
+                                          </code>
+                                        ))}
+                                      </div>
+                                    </div>
                                   </div>
 
                                   <div className="d-flex gap-2 align-items-center">
