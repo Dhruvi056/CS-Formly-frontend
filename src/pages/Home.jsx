@@ -69,6 +69,7 @@ export default function Home() {
   });
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpSaving, setSmtpSaving] = useState(false);
+  const [editingSmtpId, setEditingSmtpId] = useState(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [superAdminSection, setSuperAdminSection] = useState(() => {
@@ -418,14 +419,17 @@ export default function Home() {
 
   const handleSaveSmtp = async () => {
     const { host, port, username, password, fromName, fromEmail } = smtpForm;
-    if (!host || !port || !username || !password || !fromName || !fromEmail) {
+    if (!host || !port || !username || ( !editingSmtpId && !password) || !fromName || !fromEmail) {
       return toast.error("Please fill in all required fields.");
     }
     setSmtpSaving(true);
     try {
       const token = localStorage.getItem("authToken");
-      const res = await fetch("/api/smtp", {
-        method: "POST",
+      const url = editingSmtpId ? `/api/smtp/${editingSmtpId}` : "/api/smtp";
+      const method = editingSmtpId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -433,8 +437,9 @@ export default function Home() {
         body: JSON.stringify(smtpForm),
       });
       if (res.ok) {
-        toast.success("SMTP configuration saved!");
+        toast.success(editingSmtpId ? "SMTP configuration updated!" : "SMTP configuration saved!");
         setShowSMTPModal(false);
+        setEditingSmtpId(null);
         fetchSmtpConfigs();
         // Reset form
         setSmtpForm({
@@ -456,6 +461,21 @@ export default function Home() {
     } finally {
       setSmtpSaving(false);
     }
+  };
+
+  const handleEditSmtp = (smtp) => {
+    setEditingSmtpId(smtp._id);
+    setSmtpForm({
+      host: smtp.host || "",
+      port: String(smtp.port) || "587",
+      encryption: smtp.encryption || "TLS",
+      username: smtp.username || "",
+      password: "", // Keep password empty for security, only update if user types new one
+      fromName: smtp.fromName || "",
+      fromEmail: smtp.fromEmail || "",
+      isDefault: smtp.isDefault || false
+    });
+    setShowSMTPModal(true);
   };
 
   const handleDeleteSmtp = async (id) => {
@@ -1157,16 +1177,29 @@ export default function Home() {
                             <div className="d-flex justify-content-between align-items-center mb-3">
                               <h5 className="fw-bold">SMTP Configs</h5>
 
-                              <button
-                                className="btn text-white"
-                                style={{
-                                  backgroundColor: "#6571ff",
-                                  borderRadius: "6px",
-                                }}
-                                onClick={() => setShowSMTPModal(true)}
-                              >
-                                + Add SMTP Server
-                              </button>
+                                <button
+                                  className="btn text-white"
+                                  style={{
+                                    backgroundColor: "#6571ff",
+                                    borderRadius: "6px",
+                                  }}
+                                  onClick={() => {
+                                    setEditingSmtpId(null);
+                                    setSmtpForm({
+                                      host: "",
+                                      port: "587",
+                                      encryption: "TLS",
+                                      username: "",
+                                      password: "",
+                                      fromName: "",
+                                      fromEmail: "",
+                                      isDefault: smtpList.length === 0
+                                    });
+                                    setShowSMTPModal(true);
+                                  }}
+                                >
+                                  + Add SMTP Server
+                                </button>
                             </div>
 
                             {smtpList.length === 0 ? (
@@ -1180,7 +1213,11 @@ export default function Home() {
                               <div className="row g-3">
                                 {smtpList.map((smtp, i) => (
                                   <div key={smtp._id || i} className="col-md-6">
-                                    <div className="card border shadow-none h-100">
+                                    <div 
+                                      className="card border shadow-none h-100 cursor-pointer hover-shadow-sm transition-all" 
+                                      onClick={() => handleEditSmtp(smtp)}
+                                      style={{ cursor: 'pointer' }}
+                                    >
                                       <div className="card-body p-3">
                                         <div className="d-flex justify-content-between align-items-start mb-2">
                                           <div className="d-flex align-items-center gap-2">
@@ -1194,7 +1231,10 @@ export default function Home() {
                                               <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Default</span>
                                             )}
                                             <button 
-                                              onClick={() => handleDeleteSmtp(smtp._id)}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSmtp(smtp._id);
+                                              }}
                                               className="btn btn-link p-0 text-danger opacity-75 hover-opacity-100"
                                             >
                                               <LucideIcon name="trash-2" className="icon-sm" />
@@ -1410,8 +1450,12 @@ export default function Home() {
             <div className="modal-content border-0 shadow-lg" style={{ borderRadius: "12px", overflow: "hidden" }}>
               <div className="modal-header border-0 pb-0 pt-3 px-4 d-flex justify-content-between align-items-start">
                 <div>
-                  <h6 className="fw-bold mb-0" style={{ color: "#1e293b", fontSize: "1rem" }}>Add SMTP Configuration</h6>
-                  <p className="text-secondary mb-0" style={{ fontSize: "0.75rem" }}>Configure personal SMTP settings</p>
+                  <h6 className="fw-bold mb-0" style={{ color: "#1e293b", fontSize: "1rem" }}>
+                    {editingSmtpId ? "Edit SMTP Configuration" : "Add SMTP Configuration"}
+                  </h6>
+                  <p className="text-secondary mb-0" style={{ fontSize: "0.75rem" }}>
+                    {editingSmtpId ? "Update your SMTP settings" : "Configure personal SMTP settings"}
+                  </p>
                 </div>
                 <button type="button" className="btn-close shadow-none" style={{ padding: "0.5rem" }} onClick={() => setShowSMTPModal(false)}></button>
               </div>
@@ -1473,7 +1517,7 @@ export default function Home() {
                     <input 
                       type="password" 
                       className="form-control shadow-none" 
-                      placeholder="Your email password" 
+                      placeholder={editingSmtpId ? "Leave blank to keep current" : "Your email password"}
                       value={smtpForm.password}
                       onChange={(e) => setSmtpForm({...smtpForm, password: e.target.value})}
                       style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
@@ -1543,7 +1587,7 @@ export default function Home() {
                   disabled={smtpSaving}
                   style={{ backgroundColor: "#6366f1", border: "1px solid #6366f1", borderRadius: "6px", fontWeight: "500", padding: "0.4rem 1rem", fontSize: "0.85rem" }}
                 >
-                  {smtpSaving ? "Saving..." : "Save Now"}
+                  {smtpSaving ? "Saving..." : (editingSmtpId ? "Update Now" : "Save Now")}
                 </button>
               </div>
             </div>
