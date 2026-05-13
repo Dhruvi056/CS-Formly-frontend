@@ -164,6 +164,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const [emailModalTab, setEmailModalTab] = useState("notifications"); // "notifications" or "autoresponder"
   const [emailInput, setEmailInput] = useState("");
   const [emailsList, setEmailsList] = useState([]);
+  const [ccEmailInput, setCcEmailInput] = useState("");
+  const [ccEmailsList, setCcEmailsList] = useState([]);
 
   const [customTemplateDraft, setCustomTemplateDraft] = useState({
     enabled: false,
@@ -396,6 +398,12 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         ? emailStr.split(/[,;\n]+/).map((e) => e.trim()).filter(Boolean)
         : []
     );
+    const ccEmailStr = form.settings?.ccNotificationEmail || "";
+    setCcEmailsList(
+      ccEmailStr
+        ? ccEmailStr.split(/[,;\n]+/).map((e) => e.trim()).filter(Boolean)
+        : []
+    );
     setCustomTemplateDraft({
       enabled: form.settings?.customTemplateEnabled || false,
       body: form.settings?.customTemplateBody || "",
@@ -490,12 +498,14 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     try {
       const token = localStorage.getItem("authToken");
       const emailStr = emailsList.join(", ");
+      const ccEmailStr = ccEmailsList.join(", ");
       const res = await fetch(`/api/forms/${form.formId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           settings: {
             notificationEmail: emailStr,
+            ccNotificationEmail: ccEmailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
             autoresponderEnabled: autoresponderDraft.enabled,
@@ -520,6 +530,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           settings: {
             ...form.settings,
             notificationEmail: emailStr,
+            ccNotificationEmail: ccEmailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
             autoresponderEnabled: autoresponderDraft.enabled,
@@ -538,6 +549,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
               .filter((rule) => rule.key && (rule.attachmentUrl || rule.subject || rule.body)),
           },
         });
+        await fetchData();
         setShowEmailModal(false);
         toast.success("Email settings saved.");
       } else {
@@ -580,6 +592,23 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     if (emailsList.includes(trimmed)) { toast.error("Email already added"); return; }
     setEmailsList([...emailsList, trimmed]);
     setEmailInput("");
+  };
+
+  const addCcEmail = () => {
+    const trimmed = ccEmailInput.trim().toLowerCase();
+    if (!trimmed) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { toast.error("Invalid email"); return; }
+    if (ccEmailsList.includes(trimmed)) { toast.error("Email already added to CC"); return; }
+    setCcEmailsList([...ccEmailsList, trimmed]);
+    setCcEmailInput("");
+  };
+
+  const removeEmail = (idx) => {
+    setEmailsList(emailsList.filter((_, i) => i !== idx));
+  };
+
+  const removeCcEmail = (idx) => {
+    setCcEmailsList(ccEmailsList.filter((_, i) => i !== idx));
   };
 
   const LucideIcon = ({ name, className = "", style, ...rest }) => {
@@ -1020,36 +1049,42 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 style={{ borderRadius: 14 }}
               >
                 {/* Header with Tabs */}
-                <div className="modal-header border-0 pb-0 pt-3 px-3 flex-column align-items-stretch">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div className="d-flex gap-2 align-items-center">
+                <div className="modal-header border-0 pb-0 pt-4 px-4 flex-column align-items-stretch">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div className="d-flex gap-3 align-items-center">
                       <div
-                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                        style={{ width: 30, height: 30 }}
+                        className="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
+                        style={{ width: 42, height: 42, background: "#4F46E5" }}
                       >
                         <LucideIcon
                           name="mail"
-                          className="text-primary"
-                          style={{ width: 14, height: 14 }}
+                          className="text-white"
+                          style={{ width: 20, height: 20 }}
                         />
                       </div>
-                      <h6 className="modal-title fw-bold mb-0" style={{ fontSize: 15 }}>
+                      <h5 className="modal-title fw-bold mb-0" style={{ fontSize: 18, color: "#111827" }}>
                         Email Settings
-                      </h6>
+                      </h5>
                     </div>
                     <button
                       type="button"
                       className="btn-close"
                       onClick={() => setShowEmailModal(false)}
+                      style={{ filter: "grayscale(1)", opacity: 0.5 }}
                     />
                   </div>
 
-                  <ul className="nav nav-tabs border-bottom-0 gap-1" style={{ fontSize: 13 }}>
+                  <ul className="nav nav-tabs border-bottom-0 gap-4" style={{ fontSize: 15 }}>
                     <li className="nav-item">
                       <button
-                        className={`nav-link border-0 px-3 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                        className={`nav-link border-0 px-0 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
                         onClick={() => setEmailModalTab("notifications")}
-                        style={{ background: "transparent" }}
+                        style={{
+                          background: "transparent",
+                          color: emailModalTab === "notifications" ? "#4F46E5" : "#6b7280",
+                          borderBottom: emailModalTab === "notifications" ? "2px solid #4F46E5" : "none",
+                          borderRadius: 0
+                        }}
                       >
                         Notifications
                       </button>
@@ -1058,9 +1093,14 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     {userMeta?.subscriptionPlan === "business" && (
                       <li className="nav-item">
                         <button
-                          className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                          className={`nav-link border-0 px-0 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
                           onClick={() => setEmailModalTab("customTemplate")}
-                          style={{ background: "transparent" }}
+                          style={{
+                            background: "transparent",
+                            color: emailModalTab === "customTemplate" ? "#4F46E5" : "#6b7280",
+                            borderBottom: emailModalTab === "customTemplate" ? "2px solid #4F46E5" : "none",
+                            borderRadius: 0
+                          }}
                         >
                           Custom Template
                         </button>
@@ -1070,9 +1110,14 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     {(userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
                       <li className="nav-item">
                         <button
-                          className={`nav-link border-0 px-3 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
+                          className={`nav-link border-0 px-0 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
                           onClick={() => setEmailModalTab("autoresponder")}
-                          style={{ background: "transparent" }}
+                          style={{
+                            background: "transparent",
+                            color: emailModalTab === "autoresponder" ? "#4F46E5" : "#6b7280",
+                            borderBottom: emailModalTab === "autoresponder" ? "2px solid #4F46E5" : "none",
+                            borderRadius: 0
+                          }}
                         >
                           Autoresponder
                         </button>
@@ -1082,110 +1127,148 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 </div>
 
                 {/* Body */}
-                <div className="modal-body px-3 pt-3 pb-2">
+                <div className="modal-body px-4 pt-4 pb-2">
                   {emailModalTab === "notifications" && (
                     <>
-                      {/* Recipient list */}
-                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.05em" }}>
-                        Recipient list
-                      </label>
-                      <div
-                        className="rounded-3 bg-light mb-2"
-                        style={{
-                          border: "0.5px solid var(--bs-border-color)",
-                          minHeight: 48,
-                          maxHeight: 110,
-                          overflowY: "auto",
-                          padding: "8px 10px",
-                        }}
-                      >
-                        {emailsList.length === 0 ? (
-                          <p className="text-muted fst-italic mb-0 text-center" style={{ fontSize: 12, paddingTop: 4 }}>
-                            No recipient emails added yet.
-                          </p>
-                        ) : (
-                          <ul className="list-unstyled mb-0">
-                            {emailsList.map((e, i) => {
+                      {/* Main Recipient List */}
+                      <div className="mb-4">
+                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
+                          Recipient List (Main)
+                        </label>
+                        <div className="d-flex flex-column gap-2 mb-3">
+                          {emailsList.length === 0 ? (
+                            <div className="rounded-3 bg-light p-3 border-0 text-center text-muted" style={{ fontSize: 13 }}>
+                              No main recipients added
+                            </div>
+                          ) : (
+                            emailsList.map((e, i) => {
                               const initial = getEmailInitial(e);
                               const color = getInitialColor(initial);
                               return (
-                                <li
-                                  key={`${e}-${i}`}
-                                  className="d-flex align-items-center justify-content-between py-1"
-                                  style={{ borderBottom: "0.5px solid rgba(0,0,0,0.06)" }}
-                                >
-                                  <div className="d-flex align-items-center gap-2">
-                                    <div
-                                      className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                      style={{ width: 22, height: 22, background: color }}
-                                    >
-                                      <span style={{ fontSize: 10, fontWeight: 600, color: "#fff", lineHeight: 1 }}>
-                                        {initial}
-                                      </span>
+                                <div key={`main-${i}`} className="rounded-3 bg-light p-2 border-0 d-flex align-items-center justify-content-between">
+                                  <div className="d-flex align-items-center gap-3">
+                                    <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: color }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
                                     </div>
-                                    <span className="text-break" style={{ fontSize: 12 }}>{e}</span>
+                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
                                   </div>
                                   <button
                                     type="button"
-                                    className="btn btn-sm btn-link text-danger text-decoration-none p-0 flex-shrink-0 ms-2"
-                                    style={{ fontSize: 11 }}
-                                    onClick={() => setEmailsList(emailsList.filter((_, idx) => idx !== i))}
+                                    className="btn btn-link text-danger text-decoration-none p-0 me-2"
+                                    style={{ fontSize: 13, fontWeight: 500 }}
+                                    onClick={() => removeEmail(i)}
                                   >
                                     Remove
                                   </button>
-                                </li>
+                                </div>
                               );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-
-                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                        Add new recipient
-                      </label>
-                      <div className="d-flex gap-2 mb-2">
-                        <input
-                          type="email"
-                          className="form-control"
-                          style={{ fontSize: 12, padding: "5px 8px" }}
-                          value={emailInput}
-                          onChange={(ev) => setEmailInput(ev.target.value)}
-                          onKeyDown={(ev) => {
-                            if (ev.key === "Enter") {
-                              ev.preventDefault();
-                              addEmail();
-                            }
-                          }}
-                          placeholder="e.g. notifications@company.com"
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-primary flex-shrink-0"
-                          style={{ fontSize: 12, padding: "5px 12px" }}
-                          onClick={addEmail}
-                        >
-                          + Add
-                        </button>
-                      </div>
-
-                      <div className="alert alert-info d-flex gap-2 align-items-start mb-2 py-2" style={{ fontSize: 11 }}>
-                        <LucideIcon name="info" className="flex-shrink-0 mt-1" style={{ width: 12, height: 12 }} />
-                        <span>Addresses listed here receive alerts on every new submission.</span>
-                      </div>
-
-                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                        Owner
-                      </label>
-                      <div className="rounded-3 bg-light d-flex align-items-center gap-2 p-2" style={{ border: "0.5px solid var(--bs-border-color)" }}>
-                        <div
-                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                          style={{ width: 28, height: 28, background: ownerColor }}
-                        >
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1 }}>{ownerInitial}</span>
+                            })
+                          )}
                         </div>
-                        <div>
-                          <p className="mb-0 text-break" style={{ fontSize: 12 }}>{ownerEmail || "—"}</p>
-                          <p className="mb-0 text-muted" style={{ fontSize: 10 }}>Owner</p>
+
+                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
+                          Add New Recipient
+                        </label>
+                        <div className="d-flex gap-2 mb-3">
+                          <input
+                            type="email"
+                            className="form-control"
+                            style={{ fontSize: 13, height: 36, background: "#fff", border: "1px solid #e5e7eb" }}
+                            placeholder="e.g. notifications@company.com"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addEmail())}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-primary px-3 d-flex align-items-center justify-content-center"
+                            style={{ height: 36, background: "#4F46E5", border: "none", fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
+                            onClick={addEmail}
+                          >
+                            + Add
+                          </button>
+                        </div>
+
+                        <div className="alert alert-info py-2 px-3 mb-4 border-0 d-flex align-items-center gap-2" style={{ fontSize: 12, background: "#E0F2FE", color: "#0369A1", borderRadius: "8px" }}>
+                           <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#0369A1" }} />
+                           <span>Addresses listed here receive alerts on every new submission.</span>
+                        </div>
+                      </div>
+
+                      {/* CC Recipient List */}
+                      <div className="mb-4">
+                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
+                          CC Recipient List
+                        </label>
+                        <div className="d-flex flex-column gap-2 mb-3">
+                          {ccEmailsList.length === 0 ? (
+                            <div className="rounded-3 bg-light p-3 border-0 text-center text-muted" style={{ fontSize: 13 }}>
+                              No CC recipients added
+                            </div>
+                          ) : (
+                            ccEmailsList.map((e, i) => {
+                              const initial = getEmailInitial(e);
+                              return (
+                                <div key={`cc-${i}`} className="rounded-3 bg-light p-2 border-0 d-flex align-items-center justify-content-between">
+                                  <div className="d-flex align-items-center gap-3">
+                                    <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: "#64748b" }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
+                                    </div>
+                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-link text-danger text-decoration-none p-0 me-2"
+                                    style={{ fontSize: 13, fontWeight: 500 }}
+                                    onClick={() => removeCcEmail(i)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
+                          Add New CC Recipient
+                        </label>
+                        <div className="d-flex gap-2">
+                          <input
+                            type="email"
+                            className="form-control"
+                            style={{ fontSize: 13, height: 36, background: "#fff", border: "1px solid #e5e7eb" }}
+                            placeholder="e.g. manager@company.com"
+                            value={ccEmailInput}
+                            onChange={(e) => setCcEmailInput(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCcEmail())}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary px-3 d-flex align-items-center justify-content-center"
+                            style={{ height: 36, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
+                            onClick={addCcEmail}
+                          >
+                            + Add CC
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
+                          Owner
+                        </label>
+                        <div className="rounded-3 bg-light p-3 border-0 d-flex align-items-center gap-3">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            style={{ width: 36, height: 36, background: ownerColor }}
+                          >
+                            <span style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>{ownerInitial}</span>
+                          </div>
+                          <div className="d-flex flex-column">
+                            <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{ownerEmail || "—"}</span>
+                            <span style={{ fontSize: 12, color: "#6b7280" }}>Owner</span>
+                          </div>
                         </div>
                       </div>
                     </>
