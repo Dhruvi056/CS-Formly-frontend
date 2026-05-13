@@ -178,6 +178,16 @@ export default function Home() {
     };
   }, [currentUser, selectedForm?.formId]);
 
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (document.body.classList.contains('sidebar-open') && !e.target.closest('.sidebar') && !e.target.closest('.navbar-toggler')) {
+        document.body.classList.remove('sidebar-open');
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // --- SYNC ROUTE STATE ---
   const [showProfileView, setShowProfileView] = useState(location.pathname === "/profile");
   const [profileSection, setProfileSection] = useState("account");
@@ -528,6 +538,7 @@ export default function Home() {
 
 
   const handleSelectForm = (form) => {
+    document.body.classList.remove('sidebar-open');
     setShowProfileView(false);
     if (form) {
       setSuperAdminSection("dashboard");
@@ -667,6 +678,13 @@ export default function Home() {
       <div className="page-wrapper">
         <nav className="navbar" style={{ zIndex: 1000 }}>
           <div className="navbar-content">
+            <button 
+              className="navbar-toggler border-0 p-0 me-3 d-md-none" 
+              type="button" 
+              onClick={() => document.body.classList.toggle('sidebar-open')}
+            >
+              <LucideIcon name="menu" className="icon-md" />
+            </button>
             <form className="search-form flex-grow-1 mx-4 d-none d-md-block" style={{ maxWidth: '600px' }} onSubmit={(e) => e.preventDefault()}>
               <div
                 className="input-group shadow-none border overflow-hidden bg-white"
@@ -968,11 +986,11 @@ export default function Home() {
                                 <input type="text" className="form-control form-control-sm" value={editJoined} />
                               </div>
                             </div>
-                            <div className="mt-3 d-flex gap-2">
+                            <div className="mt-3 d-flex gap-2" style={{ flexWrap: "nowrap", alignItems: "center" }}>
                               <button
                                 type="submit"
                                 className="btn text-white"
-                                style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
+                                style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem", whiteSpace: "nowrap", flexShrink: 0 }}
                               >
                                 Save Changes
                               </button>
@@ -981,7 +999,7 @@ export default function Home() {
                                 type="button"
                                 className="btn bg-transparent"
                                 onClick={() => setShowPasswordModal(true)}
-                                style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
+                                style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem", whiteSpace: "nowrap", flexShrink: 0 }}
                               >
                                 Change Password
                               </button>
@@ -996,7 +1014,9 @@ export default function Home() {
                                   fontWeight: "500",
                                   padding: "0.35rem 1rem",
                                   fontSize: "0.85rem",
-                                  marginLeft: "auto"
+                                  marginLeft: "auto",
+                                  whiteSpace: "nowrap",
+                                  flexShrink: 0
                                 }}
                               >
                                 Delete Account

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -7,7 +7,17 @@ import 'react-quill/dist/quill.snow.css';
 import { normalizeMongoId } from "../utils/mongoIds.js";
 import "../styles/components/form-details-toolbar.css";
 
-// ── Quill Formats ──────────────────────────────────────────────────────────
+// ── Quill Modules ──────────────────────────────────────────────────────────
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, false] }],
+    ["bold", "italic", "underline", "strike", "blockquote"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["link", "image"],
+    ["clean"],
+  ],
+};
+
 const quillFormats = [
   "header",
   "bold",
@@ -164,35 +174,12 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const [emailModalTab, setEmailModalTab] = useState("notifications"); // "notifications" or "autoresponder"
   const [emailInput, setEmailInput] = useState("");
   const [emailsList, setEmailsList] = useState([]);
-  const [ccEmailInput, setCcEmailInput] = useState("");
-  const [ccEmailsList, setCcEmailsList] = useState([]);
-
+  const [emailLoading, setEmailLoading] = useState(false);
   const [customTemplateDraft, setCustomTemplateDraft] = useState({
     enabled: false,
     body: "",
   });
-  const [autoresponderDraft, setAutoresponderDraft] = useState({
-    enabled: false,
-    subject: "",
-    body: "",
-    attachmentUrl: "",
-    attachmentName: "",
-    attachmentRules: [],
-  });
   const [isHtmlMode, setIsHtmlMode] = useState(false);
-
-  // Body scroll lock when email modal is open
-  useEffect(() => {
-    if (showEmailModal) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [showEmailModal]);
-
   const [viewingSubmission, setViewingSubmission] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -215,85 +202,6 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       console.error("Failed to copy:", err);
     }
   };
-
-  const quillRef = useRef(null);
-  const autoresponderQuillRef = useRef(null);
-
-  const imageHandler = useCallback(async (refOrQuill) => {
-    const input = document.createElement("input");
-    input.setAttribute("type", "file");
-    input.setAttribute("accept", "image/*");
-    input.click();
-
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      // Check file size (e.g., 5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image too large (max 5MB)");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const loadingToast = toast.loading("Uploading image...");
-      try {
-        const token = localStorage.getItem("authToken");
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (res.ok) {
-          const { url } = await res.json();
-          const quill = refOrQuill.current ? refOrQuill.current.getEditor() : refOrQuill;
-          const range = quill.getSelection();
-          quill.insertEmbed(range.index, "image", url);
-          toast.success("Image uploaded!");
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          toast.error(errData.error || errData.message || "Upload failed.");
-        }
-      } catch (err) {
-        toast.error("Error uploading image.");
-      } finally {
-        toast.dismiss(loadingToast);
-      }
-    };
-  }, []);
-
-  const memoQuillModules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, false] }],
-        ["bold", "italic", "underline", "strike", "blockquote"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "image"],
-        ["clean"],
-      ],
-      handlers: {
-        image: () => imageHandler(quillRef),
-      },
-    },
-  }), [imageHandler]);
-
-  const memoAutoresponderQuillModules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, false] }],
-        ["bold", "italic", "underline", "strike", "blockquote"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "image"],
-        ["clean"],
-      ],
-      handlers: {
-        image: () => imageHandler(autoresponderQuillRef),
-      },
-    },
-  }), [imageHandler]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -398,31 +306,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         ? emailStr.split(/[,;\n]+/).map((e) => e.trim()).filter(Boolean)
         : []
     );
-    const ccEmailStr = form.settings?.ccNotificationEmail || "";
-    setCcEmailsList(
-      ccEmailStr
-        ? ccEmailStr.split(/[,;\n]+/).map((e) => e.trim()).filter(Boolean)
-        : []
-    );
     setCustomTemplateDraft({
       enabled: form.settings?.customTemplateEnabled || false,
       body: form.settings?.customTemplateBody || "",
-    });
-    setAutoresponderDraft({
-      enabled: form.settings?.autoresponderEnabled || false,
-      subject: form.settings?.autoresponderSubject || "Thank you! Your submission has been received!",
-      body: form.settings?.autoresponderBody || "Thank you for your submission. Your response has been received successfully.",
-      attachmentUrl: form.settings?.autoresponderAttachmentUrl || "",
-      attachmentName: form.settings?.autoresponderAttachmentName || "",
-      attachmentRules: Array.isArray(form.settings?.autoresponderAttachmentRules)
-        ? form.settings.autoresponderAttachmentRules.map((rule) => ({
-          key: rule?.key || "",
-          attachmentUrl: rule?.attachmentUrl || "",
-          attachmentName: rule?.attachmentName || "",
-          subject: rule?.subject || "",
-          body: rule?.body || "",
-        }))
-        : [],
     });
   }, [form]);
 
@@ -498,30 +384,14 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     try {
       const token = localStorage.getItem("authToken");
       const emailStr = emailsList.join(", ");
-      const ccEmailStr = ccEmailsList.join(", ");
       const res = await fetch(`/api/forms/${form.formId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           settings: {
             notificationEmail: emailStr,
-            ccNotificationEmail: ccEmailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
-            autoresponderEnabled: autoresponderDraft.enabled,
-            autoresponderSubject: autoresponderDraft.subject,
-            autoresponderBody: autoresponderDraft.body,
-            autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
-            autoresponderAttachmentName: autoresponderDraft.attachmentName,
-            autoresponderAttachmentRules: (autoresponderDraft.attachmentRules || [])
-              .map((rule) => ({
-                key: String(rule?.key || "").trim(),
-                attachmentUrl: String(rule?.attachmentUrl || "").trim(),
-                attachmentName: String(rule?.attachmentName || "").trim(),
-                subject: String(rule?.subject || "").trim(),
-                body: String(rule?.body || "").trim(),
-              }))
-              .filter((rule) => rule.key && (rule.attachmentUrl || rule.subject || rule.body)),
           },
         }),
       });
@@ -530,26 +400,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           settings: {
             ...form.settings,
             notificationEmail: emailStr,
-            ccNotificationEmail: ccEmailStr,
             customTemplateEnabled: customTemplateDraft.enabled,
             customTemplateBody: customTemplateDraft.body,
-            autoresponderEnabled: autoresponderDraft.enabled,
-            autoresponderSubject: autoresponderDraft.subject,
-            autoresponderBody: autoresponderDraft.body,
-            autoresponderAttachmentUrl: autoresponderDraft.attachmentUrl,
-            autoresponderAttachmentName: autoresponderDraft.attachmentName,
-            autoresponderAttachmentRules: (autoresponderDraft.attachmentRules || [])
-              .map((rule) => ({
-                key: String(rule?.key || "").trim(),
-                attachmentUrl: String(rule?.attachmentUrl || "").trim(),
-                attachmentName: String(rule?.attachmentName || "").trim(),
-                subject: String(rule?.subject || "").trim(),
-                body: String(rule?.body || "").trim(),
-              }))
-              .filter((rule) => rule.key && (rule.attachmentUrl || rule.subject || rule.body)),
           },
         });
-        await fetchData();
         setShowEmailModal(false);
         toast.success("Email settings saved.");
       } else {
@@ -594,23 +448,6 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     setEmailInput("");
   };
 
-  const addCcEmail = () => {
-    const trimmed = ccEmailInput.trim().toLowerCase();
-    if (!trimmed) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { toast.error("Invalid email"); return; }
-    if (ccEmailsList.includes(trimmed)) { toast.error("Email already added to CC"); return; }
-    setCcEmailsList([...ccEmailsList, trimmed]);
-    setCcEmailInput("");
-  };
-
-  const removeEmail = (idx) => {
-    setEmailsList(emailsList.filter((_, i) => i !== idx));
-  };
-
-  const removeCcEmail = (idx) => {
-    setCcEmailsList(ccEmailsList.filter((_, i) => i !== idx));
-  };
-
   const LucideIcon = ({ name, className = "", style, ...rest }) => {
     useEffect(() => {
       if (window.lucide) window.lucide.createIcons();
@@ -638,14 +475,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   normalizedSubmissions.forEach((s) => {
     if (s.data) Object.keys(s.data).forEach((f) => allFields.add(f));
   });
-  const fields = Array.from(allFields).filter((f) => {
-    const lower = f.toLowerCase();
-    return (
-      f !== "_gotcha" &&
-      lower !== "cf-turnstile-response" &&
-      lower !== "g-recaptcha-response"
-    );
-  });
+  const fields = Array.from(allFields).filter((f) => f !== "_gotcha");
 
   const openFile = async (url, fallbackLabel, submissionId, fieldName) => {
     try {
@@ -819,9 +649,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         <div className="card shadow-sm border-0 flex-grow-1 overflow-hidden">
           <div className="card-body d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h6 className="card-title mb-0">
-                  Submissions ({filteredSubmissions.length})
-                </h6>
+              <h6 className="card-title mb-0">
+                Submissions ({filteredSubmissions.length})
+              </h6>
               <button
                 className="btn btn-sm btn-outline-primary"
                 onClick={fetchSubmissions}
@@ -846,7 +676,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
             ) : (
               <div className="table-responsive flex-grow-1">
                 <table className="table table-hover align-middle">
-                  <thead className="bg-light sticky-top" style={{ zIndex: 5 }}>
+                  <thead className="bg-light sticky-top">
                     <tr>
                       {fields.map((f) => (
                         <th
@@ -1042,49 +872,43 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
           >
             <div
               className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
-              style={{ maxWidth: 700 }}
+              style={{ maxWidth: 450 }}
             >
               <div
                 className="modal-content border-0 shadow-lg"
                 style={{ borderRadius: 14 }}
               >
                 {/* Header with Tabs */}
-                <div className="modal-header border-0 pb-0 pt-4 px-4 flex-column align-items-stretch">
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div className="d-flex gap-3 align-items-center">
+                <div className="modal-header border-0 pb-0 pt-3 px-3 flex-column align-items-stretch">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="d-flex gap-2 align-items-center">
                       <div
-                        className="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
-                        style={{ width: 42, height: 42, background: "#4F46E5" }}
+                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                        style={{ width: 30, height: 30 }}
                       >
                         <LucideIcon
                           name="mail"
-                          className="text-white"
-                          style={{ width: 20, height: 20 }}
+                          className="text-primary"
+                          style={{ width: 14, height: 14 }}
                         />
                       </div>
-                      <h5 className="modal-title fw-bold mb-0" style={{ fontSize: 18, color: "#111827" }}>
+                      <h6 className="modal-title fw-bold mb-0" style={{ fontSize: 15 }}>
                         Email Settings
-                      </h5>
+                      </h6>
                     </div>
                     <button
                       type="button"
                       className="btn-close"
                       onClick={() => setShowEmailModal(false)}
-                      style={{ filter: "grayscale(1)", opacity: 0.5 }}
                     />
                   </div>
-
-                  <ul className="nav nav-tabs border-bottom-0 gap-4" style={{ fontSize: 15 }}>
+                  
+                  <ul className="nav nav-tabs border-bottom-0 gap-1" style={{ fontSize: 13 }}>
                     <li className="nav-item">
-                      <button
-                        className={`nav-link border-0 px-0 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
+                      <button 
+                        className={`nav-link border-0 px-3 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
                         onClick={() => setEmailModalTab("notifications")}
-                        style={{
-                          background: "transparent",
-                          color: emailModalTab === "notifications" ? "#4F46E5" : "#6b7280",
-                          borderBottom: emailModalTab === "notifications" ? "2px solid #4F46E5" : "none",
-                          borderRadius: 0
-                        }}
+                        style={{ background: "transparent" }}
                       >
                         Notifications
                       </button>
@@ -1092,34 +916,12 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
 
                     {userMeta?.subscriptionPlan === "business" && (
                       <li className="nav-item">
-                        <button
-                          className={`nav-link border-0 px-0 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
+                        <button 
+                          className={`nav-link border-0 px-3 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary border-bottom border-primary border-2" : "text-muted"}`}
                           onClick={() => setEmailModalTab("customTemplate")}
-                          style={{
-                            background: "transparent",
-                            color: emailModalTab === "customTemplate" ? "#4F46E5" : "#6b7280",
-                            borderBottom: emailModalTab === "customTemplate" ? "2px solid #4F46E5" : "none",
-                            borderRadius: 0
-                          }}
+                          style={{ background: "transparent" }}
                         >
                           Custom Template
-                        </button>
-                      </li>
-                    )}
-
-                    {(userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
-                      <li className="nav-item">
-                        <button
-                          className={`nav-link border-0 px-0 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
-                          onClick={() => setEmailModalTab("autoresponder")}
-                          style={{
-                            background: "transparent",
-                            color: emailModalTab === "autoresponder" ? "#4F46E5" : "#6b7280",
-                            borderBottom: emailModalTab === "autoresponder" ? "2px solid #4F46E5" : "none",
-                            borderRadius: 0
-                          }}
-                        >
-                          Autoresponder
                         </button>
                       </li>
                     )}
@@ -1127,148 +929,110 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 </div>
 
                 {/* Body */}
-                <div className="modal-body px-4 pt-4 pb-2">
+                <div className="modal-body px-3 pt-3 pb-2">
                   {emailModalTab === "notifications" && (
                     <>
-                      {/* Main Recipient List */}
-                      <div className="mb-4">
-                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
-                          Recipient List (Main)
-                        </label>
-                        <div className="d-flex flex-column gap-2 mb-3">
-                          {emailsList.length === 0 ? (
-                            <div className="rounded-3 bg-light p-3 border-0 text-center text-muted" style={{ fontSize: 13 }}>
-                              No main recipients added
-                            </div>
-                          ) : (
-                            emailsList.map((e, i) => {
+                      {/* Recipient list */}
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.05em" }}>
+                        Recipient list
+                      </label>
+                      <div
+                        className="rounded-3 bg-light mb-2"
+                        style={{
+                          border: "0.5px solid var(--bs-border-color)",
+                          minHeight: 48,
+                          maxHeight: 110,
+                          overflowY: "auto",
+                          padding: "8px 10px",
+                        }}
+                      >
+                        {emailsList.length === 0 ? (
+                          <p className="text-muted fst-italic mb-0 text-center" style={{ fontSize: 12, paddingTop: 4 }}>
+                            No recipient emails added yet.
+                          </p>
+                        ) : (
+                          <ul className="list-unstyled mb-0">
+                            {emailsList.map((e, i) => {
                               const initial = getEmailInitial(e);
                               const color = getInitialColor(initial);
                               return (
-                                <div key={`main-${i}`} className="rounded-3 bg-light p-2 border-0 d-flex align-items-center justify-content-between">
-                                  <div className="d-flex align-items-center gap-3">
-                                    <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: color }}>
-                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
+                                <li
+                                  key={`${e}-${i}`}
+                                  className="d-flex align-items-center justify-content-between py-1"
+                                  style={{ borderBottom: "0.5px solid rgba(0,0,0,0.06)" }}
+                                >
+                                  <div className="d-flex align-items-center gap-2">
+                                    <div
+                                      className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                      style={{ width: 22, height: 22, background: color }}
+                                    >
+                                      <span style={{ fontSize: 10, fontWeight: 600, color: "#fff", lineHeight: 1 }}>
+                                        {initial}
+                                      </span>
                                     </div>
-                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
+                                    <span className="text-break" style={{ fontSize: 12 }}>{e}</span>
                                   </div>
                                   <button
                                     type="button"
-                                    className="btn btn-link text-danger text-decoration-none p-0 me-2"
-                                    style={{ fontSize: 13, fontWeight: 500 }}
-                                    onClick={() => removeEmail(i)}
+                                    className="btn btn-sm btn-link text-danger text-decoration-none p-0 flex-shrink-0 ms-2"
+                                    style={{ fontSize: 11 }}
+                                    onClick={() => setEmailsList(emailsList.filter((_, idx) => idx !== i))}
                                   >
                                     Remove
                                   </button>
-                                </div>
+                                </li>
                               );
-                            })
-                          )}
-                        </div>
-
-                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
-                          Add New Recipient
-                        </label>
-                        <div className="d-flex gap-2 mb-3">
-                          <input
-                            type="email"
-                            className="form-control"
-                            style={{ fontSize: 13, height: 36, background: "#fff", border: "1px solid #e5e7eb" }}
-                            placeholder="e.g. notifications@company.com"
-                            value={emailInput}
-                            onChange={(e) => setEmailInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addEmail())}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-primary px-3 d-flex align-items-center justify-content-center"
-                            style={{ height: 36, background: "#4F46E5", border: "none", fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
-                            onClick={addEmail}
-                          >
-                            + Add
-                          </button>
-                        </div>
-
-                        <div className="alert alert-info py-2 px-3 mb-4 border-0 d-flex align-items-center gap-2" style={{ fontSize: 12, background: "#E0F2FE", color: "#0369A1", borderRadius: "8px" }}>
-                           <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#0369A1" }} />
-                           <span>Addresses listed here receive alerts on every new submission.</span>
-                        </div>
+                            })}
+                          </ul>
+                        )}
                       </div>
 
-                      {/* CC Recipient List */}
-                      <div className="mb-4">
-                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
-                          CC Recipient List
-                        </label>
-                        <div className="d-flex flex-column gap-2 mb-3">
-                          {ccEmailsList.length === 0 ? (
-                            <div className="rounded-3 bg-light p-3 border-0 text-center text-muted" style={{ fontSize: 13 }}>
-                              No CC recipients added
-                            </div>
-                          ) : (
-                            ccEmailsList.map((e, i) => {
-                              const initial = getEmailInitial(e);
-                              return (
-                                <div key={`cc-${i}`} className="rounded-3 bg-light p-2 border-0 d-flex align-items-center justify-content-between">
-                                  <div className="d-flex align-items-center gap-3">
-                                    <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: "#64748b" }}>
-                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
-                                    </div>
-                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="btn btn-link text-danger text-decoration-none p-0 me-2"
-                                    style={{ fontSize: 13, fontWeight: 500 }}
-                                    onClick={() => removeCcEmail(i)}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-
-                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
-                          Add New CC Recipient
-                        </label>
-                        <div className="d-flex gap-2">
-                          <input
-                            type="email"
-                            className="form-control"
-                            style={{ fontSize: 13, height: 36, background: "#fff", border: "1px solid #e5e7eb" }}
-                            placeholder="e.g. manager@company.com"
-                            value={ccEmailInput}
-                            onChange={(e) => setCcEmailInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCcEmail())}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-outline-primary px-3 d-flex align-items-center justify-content-center"
-                            style={{ height: 36, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
-                            onClick={addCcEmail}
-                          >
-                            + Add CC
-                          </button>
-                        </div>
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                        Add new recipient
+                      </label>
+                      <div className="d-flex gap-2 mb-2">
+                        <input
+                          type="email"
+                          className="form-control"
+                          style={{ fontSize: 12, padding: "5px 8px" }}
+                          value={emailInput}
+                          onChange={(ev) => setEmailInput(ev.target.value)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter") {
+                              ev.preventDefault();
+                              addEmail();
+                            }
+                          }}
+                          placeholder="e.g. notifications@company.com"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-primary flex-shrink-0"
+                          style={{ fontSize: 12, padding: "5px 12px" }}
+                          onClick={addEmail}
+                        >
+                          + Add
+                        </button>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="form-label mb-2 text-uppercase text-secondary fw-bold" style={{ fontSize: 10, letterSpacing: "0.05em" }}>
-                          Owner
-                        </label>
-                        <div className="rounded-3 bg-light p-3 border-0 d-flex align-items-center gap-3">
-                          <div
-                            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                            style={{ width: 36, height: 36, background: ownerColor }}
-                          >
-                            <span style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>{ownerInitial}</span>
-                          </div>
-                          <div className="d-flex flex-column">
-                            <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{ownerEmail || "—"}</span>
-                            <span style={{ fontSize: 12, color: "#6b7280" }}>Owner</span>
-                          </div>
+                      <div className="alert alert-info d-flex gap-2 align-items-start mb-2 py-2" style={{ fontSize: 11 }}>
+                        <LucideIcon name="info" className="flex-shrink-0 mt-1" style={{ width: 12, height: 12 }} />
+                        <span>Addresses listed here receive alerts on every new submission.</span>
+                      </div>
+
+                      <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
+                        Owner
+                      </label>
+                      <div className="rounded-3 bg-light d-flex align-items-center gap-2 p-2" style={{ border: "0.5px solid var(--bs-border-color)" }}>
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{ width: 28, height: 28, background: ownerColor }}
+                        >
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#fff", lineHeight: 1 }}>{ownerInitial}</span>
+                        </div>
+                        <div>
+                          <p className="mb-0 text-break" style={{ fontSize: 12 }}>{ownerEmail || "—"}</p>
+                          <p className="mb-0 text-muted" style={{ fontSize: 10 }}>Owner</p>
                         </div>
                       </div>
                     </>
@@ -1337,17 +1101,16 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         ) : (
                           <ReactQuill
                             theme="snow"
-                            ref={quillRef}
                             value={customTemplateDraft.body}
                             onChange={(content) => setCustomTemplateDraft({ ...customTemplateDraft, body: content })}
-                            modules={memoQuillModules}
+                            modules={quillModules}
                             formats={quillFormats}
                             placeholder="Design your notification email template..."
                             readOnly={!customTemplateDraft.enabled}
                           />
                         )}
                       </div>
-
+                      
                       <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
                         <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
                           <LucideIcon name="info" style={{ width: 14, height: 14 }} />
@@ -1355,9 +1118,9 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         </div>
                         <div className="d-flex flex-wrap gap-2 mb-2">
                           {['{{AllFields}}', '{{FormName}}', '{{DashboardUrl}}', '{{SubmittedAt}}', '{{IpAddress}}'].map(tag => (
-                            <code
+                            <code 
                               key={tag}
-                              className="bg-white border rounded px-1 text-primary"
+                              className="bg-white border rounded px-1 text-primary" 
                               style={{ cursor: "pointer", fontSize: 10 }}
                               onClick={() => {
                                 copyToClipboard(tag);
@@ -1373,371 +1136,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         </div>
                       </div>
 
-
-                    </>
-                  )}
-
-
-                  {emailModalTab === "autoresponder" && (userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
-                    <>
-                      <div className="form-check form-switch mb-3">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="autoresponderEnabled"
-                          checked={autoresponderDraft.enabled}
-                          onChange={(e) =>
-                            setAutoresponderDraft({ ...autoresponderDraft, enabled: e.target.checked })
-                          }
-                        />
-                        <label className="form-check-label small fw-bold" htmlFor="autoresponderEnabled">
-                          Enable Autoresponder (Thank You Message)
-                        </label>
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                          Email Subject
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          style={{ fontSize: 12 }}
-                          value={autoresponderDraft.subject}
-                          onChange={(e) => setAutoresponderDraft({ ...autoresponderDraft, subject: e.target.value })}
-                          disabled={!autoresponderDraft.enabled}
-                          placeholder="e.g. Thanks for your submission!"
-                        />
-                      </div>
-
-                      <div className="d-flex justify-content-between align-items-center mb-1">
-                        <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                          Message Body
-                        </label>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-link text-decoration-none p-0 text-danger"
-                          style={{ fontSize: 10, fontWeight: 600 }}
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to clear the entire message body?")) {
-                              setAutoresponderDraft({ ...autoresponderDraft, body: "" });
-                            }
-                          }}
-                        >
-                          Clear Body
-                        </button>
-                      </div>
-
-                      <div className="alert alert-warning py-2 px-3 mb-2 d-flex align-items-start gap-2" style={{ fontSize: 10, border: "none", background: "#fffbeb", color: "#92400e", borderRadius: "6px" }}>
-                        <LucideIcon name="alert-triangle" style={{ width: 12, height: 12, marginTop: 2 }} />
-                        <span><strong>Warning:</strong> Adding large images directly can make the email very large, causing it to be "clipped" (hidden) by Gmail. We recommend using smaller images or links.</span>
-                      </div>
-
-                      <div className="mb-2 fd-quill-container">
-                        <ReactQuill
-                          theme="snow"
-                          ref={autoresponderQuillRef}
-                          value={autoresponderDraft.body}
-                          onChange={(content) => setAutoresponderDraft({ ...autoresponderDraft, body: content })}
-                          modules={memoAutoresponderQuillModules}
-                          formats={quillFormats}
-                          placeholder="Type your thank you message here..."
-                          readOnly={!autoresponderDraft.enabled}
-                        />
-                      </div>
-
-                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
-                        <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
-                          <LucideIcon name="info" style={{ width: 14, height: 14 }} />
-                          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.03em" }}>Available Placeholders</span>
-                        </div>
-                        <div className="d-flex flex-wrap gap-2 mb-2">
-                          {['{{AllFields}}', '{{FormName}}', '{{SubmittedAt}}'].map(tag => (
-                            <code
-                              key={tag}
-                              className="bg-white border rounded px-1 text-primary"
-                              style={{ cursor: "pointer", fontSize: 10 }}
-                              onClick={() => {
-                                copyToClipboard(tag);
-                                toast.success(`Copied ${tag}`);
-                              }}
-                            >
-                              {tag}
-                            </code>
-                          ))}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: 10 }}>
-                          Tip: Use <code>{`{{FieldName}}`}</code> to insert a specific field value.
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-top">
-                        <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                          Default Email Attachment (PDF/Document)
-                        </label>
-                        <div className="d-flex align-items-center gap-2">
-                          <button
-                            type="button"
-                            className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
-                            style={{ fontSize: 11, fontWeight: 600 }}
-                            disabled={!autoresponderDraft.enabled}
-                            onClick={() => {
-                              const input = document.createElement("input");
-                              input.type = "file";
-                              input.accept = ".pdf,.doc,.docx,.zip";
-                              input.onchange = async (e) => {
-                                const file = e.target.files[0];
-                                if (!file) return;
-
-                                const formData = new FormData();
-                                formData.append("file", file);
-
-                                const t = toast.loading("Uploading attachment...");
-                                try {
-                                  const res = await fetch("/api/upload", {
-                                    method: "POST",
-                                    headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
-                                    body: formData,
-                                  });
-                                  if (res.ok) {
-                                    const { url } = await res.json();
-                                    setAutoresponderDraft(prev => ({
-                                      ...prev,
-                                      attachmentUrl: url,
-                                      attachmentName: file.name
-                                    }));
-                                    toast.success("Attachment added!");
-                                  } else {
-                                    toast.error("Upload failed.");
-                                  }
-                                } catch (err) {
-                                  toast.error("Upload error.");
-                                } finally {
-                                  toast.dismiss(t);
-                                }
-                              };
-                              input.click();
-                            }}
-                          >
-                            <LucideIcon name="paperclip" style={{ width: 12, height: 12 }} />
-                            {autoresponderDraft.attachmentUrl ? "Change Attachment" : "Attach PDF/File"}
-                          </button>
-
-                          {autoresponderDraft.attachmentUrl && (
-                            <div className="d-flex align-items-center gap-2 bg-light rounded px-2 py-1 flex-grow-1" style={{ fontSize: 11, minWidth: 0 }}>
-                              <LucideIcon name="file-text" className="text-secondary flex-shrink-0" style={{ width: 12, height: 12 }} />
-                              <span className="text-truncate text-secondary">{autoresponderDraft.attachmentName || "Attached file"}</span>
-                              <button
-                                type="button"
-                                className="btn btn-link p-0 text-danger ms-auto"
-                                onClick={() => setAutoresponderDraft(prev => ({ ...prev, attachmentUrl: "", attachmentName: "" }))}
-                              >
-                                <LucideIcon name="x" style={{ width: 12, height: 12 }} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <label className="form-label mb-0 text-uppercase text-secondary" style={{ fontSize: 10, fontWeight: 600 }}>
-                              ID based attachments
-                            </label>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-primary"
-                              style={{ fontSize: 10 }}
-                              disabled={!autoresponderDraft.enabled}
-                              onClick={() =>
-                                setAutoresponderDraft((prev) => ({
-                                  ...prev,
-                                  attachmentRules: [...(prev.attachmentRules || []), { key: "", attachmentUrl: "", attachmentName: "", subject: "", body: "" }],
-                                }))
-                              }
-                            >
-                              + Add ID
-                            </button>
-                          </div>
-
-                          {(autoresponderDraft.attachmentRules || []).length === 0 ? (
-                            <div className="text-muted small">No ID rules added yet.</div>
-                          ) : (
-                            <div className="d-flex flex-column gap-2">
-                              {(autoresponderDraft.attachmentRules || []).map((rule, idx) => (
-                                <div key={`rule-${idx}`} className="border rounded p-2 bg-light shadow-sm">
-                                  <div className="d-flex gap-2 align-items-center mb-2">
-                                    <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Enter ID (e.g. JOBID01)"
-                                      value={rule.key || ""}
-                                      disabled={!autoresponderDraft.enabled}
-                                      style={{ fontWeight: 600 }}
-                                      onChange={(e) =>
-                                        setAutoresponderDraft((prev) => {
-                                          const next = [...(prev.attachmentRules || [])];
-                                          next[idx] = { ...next[idx], key: e.target.value };
-                                          return { ...prev, attachmentRules: next };
-                                        })
-                                      }
-                                    />
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-outline-danger"
-                                      disabled={!autoresponderDraft.enabled}
-                                      onClick={() =>
-                                        setAutoresponderDraft((prev) => ({
-                                          ...prev,
-                                          attachmentRules: (prev.attachmentRules || []).filter((_, i) => i !== idx),
-                                        }))
-                                      }
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-
-                                  <div className="mb-2">
-                                    <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 9, fontWeight: 700 }}>
-                                      Email Subject for this ID
-                                    </label>
-                                    <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Custom subject for this ID..."
-                                      value={rule.subject || ""}
-                                      disabled={!autoresponderDraft.enabled}
-                                      onChange={(e) =>
-                                        setAutoresponderDraft((prev) => {
-                                          const next = [...(prev.attachmentRules || [])];
-                                          next[idx] = { ...next[idx], subject: e.target.value };
-                                          return { ...prev, attachmentRules: next };
-                                        })
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="mb-2 fd-quill-container">
-                                    <label className="form-label mb-1 text-uppercase text-secondary" style={{ fontSize: 9, fontWeight: 700 }}>
-                                      Message Body for this ID
-                                    </label>
-                                    <ReactQuill
-                                      theme="snow"
-                                      value={rule.body || ""}
-                                      onChange={(content) =>
-                                        setAutoresponderDraft((prev) => {
-                                          const next = [...(prev.attachmentRules || [])];
-                                          next[idx] = { ...next[idx], body: content };
-                                          return { ...prev, attachmentRules: next };
-                                        })
-                                      }
-                                      modules={{
-                                        toolbar: {
-                                          container: [
-                                            [{ header: [1, 2, false] }],
-                                            ["bold", "italic", "underline", "strike", "blockquote"],
-                                            [{ list: "ordered" }, { list: "bullet" }],
-                                            ["link", "image"],
-                                            ["clean"],
-                                          ],
-                                          handlers: {
-                                            image: function () {
-                                              imageHandler(this.quill);
-                                            },
-                                          },
-                                        },
-                                      }}
-                                      formats={quillFormats}
-                                      placeholder="Custom message body..."
-                                      readOnly={!autoresponderDraft.enabled}
-                                    />
-                                    <div className="mt-2 py-1 px-2 rounded" style={{ fontSize: 10, background: "#f0f9ff", border: "1px solid #e0f2fe" }}>
-                                      <div className="d-flex align-items-center gap-1 fw-bold mb-1 text-primary">
-                                        <LucideIcon name="info" style={{ width: 10, height: 10 }} />
-                                        <span style={{ fontSize: 9, textTransform: "uppercase" }}>Placeholders</span>
-                                      </div>
-                                      <div className="d-flex flex-wrap gap-1">
-                                        {['{{AllFields}}', '{{FormName}}', '{{SubmittedAt}}'].map(tag => (
-                                          <code
-                                            key={tag}
-                                            className="bg-white border rounded px-1 text-primary"
-                                            style={{ cursor: "pointer", fontSize: 9 }}
-                                            onClick={() => {
-                                              copyToClipboard(tag);
-                                              toast.success(`Copied ${tag}`);
-                                            }}
-                                          >
-                                            {tag}
-                                          </code>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="d-flex gap-2 align-items-center">
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-primary btn-sm"
-                                      style={{ fontSize: 10, padding: "2px 8px" }}
-                                      disabled={!autoresponderDraft.enabled}
-                                      onClick={() => {
-                                        const input = document.createElement("input");
-                                        input.type = "file";
-                                        input.accept = ".pdf,.doc,.docx,.zip";
-                                        input.onchange = async (e) => {
-                                          const file = e.target.files[0];
-                                          if (!file) return;
-
-                                          const formData = new FormData();
-                                          formData.append("file", file);
-
-                                          const t = toast.loading("Uploading attachment...");
-                                          try {
-                                            const res = await fetch("/api/upload", {
-                                              method: "POST",
-                                              headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
-                                              body: formData,
-                                            });
-                                            if (!res.ok) {
-                                              toast.error("Upload failed.");
-                                              return;
-                                            }
-                                            const { url } = await res.json();
-                                            setAutoresponderDraft((prev) => {
-                                              const next = [...(prev.attachmentRules || [])];
-                                              next[idx] = {
-                                                ...next[idx],
-                                                attachmentUrl: url,
-                                                attachmentName: file.name,
-                                              };
-                                              return { ...prev, attachmentRules: next };
-                                            });
-                                            toast.success("Attachment added!");
-                                          } catch (err) {
-                                            toast.error("Upload error.");
-                                          } finally {
-                                            toast.dismiss(t);
-                                          }
-                                        };
-                                        input.click();
-                                      }}
-                                    >
-                                      {rule.attachmentUrl ? "Change PDF/File" : "Attach PDF/File"}
-                                    </button>
-
-                                    <span className="small text-muted text-truncate" style={{ maxWidth: 180, fontSize: 10 }}>
-                                      {rule.attachmentName || "No file selected"}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <p className="text-muted mt-2 mb-0" style={{ fontSize: 9 }}>
-                          Max size 5MB. If payload has a matching ID, that specific file is sent; otherwise default attachment is used.
-                        </p>
-                      </div>
+                      
                     </>
                   )}
                 </div>
