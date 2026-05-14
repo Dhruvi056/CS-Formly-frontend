@@ -126,3 +126,72 @@ body.sidebar-folded .sidebar .sidebar-body .nav-link {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+
+/* --- Responsive Sidebar (Mobile & Tablet) --- */
+
+@media (max-width: 991px) {
+  #root {
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  .main-wrapper .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -240px !important;
+    width: 240px !important;
+    height: 100vh !important;
+    z-index: 2000 !important;
+    transition: left 0.3s ease-in-out !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: var(--bs-body-bg) !important;
+    box-shadow: 10px 0 20px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  body.sidebar-open .sidebar {
+    left: 0 !important;
+  }
+
+  .main-wrapper .page-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+  }
+
+  .main-wrapper .page-wrapper .navbar {
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Overlay when sidebar is open */
+  body.sidebar-open::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* Hide search form on small screens in navbar */
+  .navbar .search-form {
+    display: none !important;
+  }
+}
+
+/* Fix for 425px and 320px */
+@media (max-width: 767px) {
+  .sidebar {
+    width: 240px !important;
+  }
+  
+  .navbar-content {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}

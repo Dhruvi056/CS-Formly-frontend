@@ -667,6 +667,14 @@ export default function Home() {
       <div className="page-wrapper">
         <nav className="navbar" style={{ zIndex: 1000 }}>
           <div className="navbar-content">
+            <button
+              className="navbar-toggler border-0 bg-transparent p-0 me-2 d-lg-none"
+              type="button"
+              onClick={() => document.body.classList.toggle("sidebar-open")}
+              aria-label="Toggle Sidebar"
+            >
+              <LucideIcon name="menu" className="icon-md" />
+            </button>
             <form className="search-form flex-grow-1 mx-4 d-none d-md-block" style={{ maxWidth: '600px' }} onSubmit={(e) => e.preventDefault()}>
               <div
                 className="input-group shadow-none border overflow-hidden bg-white"

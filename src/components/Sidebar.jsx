@@ -265,12 +265,24 @@ export default function Sidebar({
         >
           CS <span>Formly</span>
         </button>
-        <div className="sidebar-toggler" style={{ color: '#7987a1', display: 'flex' }} onClick={() => document.body.classList.toggle('sidebar-folded')}>
+        <div className="sidebar-toggler d-none d-md-flex" style={{ color: '#7987a1' }} onClick={() => document.body.classList.toggle('sidebar-folded')}>
           <LucideIcon name="menu" className="icon-md" />
         </div>
+        <button
+          type="button"
+          className="btn btn-link p-0 border-0 text-decoration-none d-md-none ms-auto text-secondary"
+          onClick={() => document.body.classList.remove("sidebar-open")}
+          aria-label="Close Sidebar"
+        >
+          <LucideIcon name="x" className="icon-md" />
+        </button>
       </div>
       <div className="sidebar-body" style={{ overflowX: "hidden" }}>
-        <ul className="nav" id="sidebarNav">
+        <ul className="nav" id="sidebarNav" onClick={() => {
+          if (window.innerWidth < 992) {
+            document.body.classList.remove("sidebar-open");
+          }
+        }}>
           {isSuperAdmin && (
             <>
               <li className={`nav-item ${activeAdminSection === "dashboard" ? "active" : ""}`}>
