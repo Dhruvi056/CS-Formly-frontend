@@ -418,8 +418,10 @@ export default function Home() {
   };
 
   const handleSaveSmtp = async () => {
-    const { host, port, username, password, fromName, fromEmail } = smtpForm;
-    if (!host || !port || !username || ( !editingSmtpId && !password) || !fromName || !fromEmail) {
+    const { host, port, username, password, fromName } = smtpForm;
+    const finalFromEmail = username; // Automatically use username as fromEmail
+    
+    if (!host || !port || !username || ( !editingSmtpId && !password) || !fromName) {
       return toast.error("Please fill in all required fields.");
     }
     setSmtpSaving(true);
@@ -428,13 +430,18 @@ export default function Home() {
       const url = editingSmtpId ? `/api/smtp/${editingSmtpId}` : "/api/smtp";
       const method = editingSmtpId ? "PUT" : "POST";
 
+      const payload = {
+        ...smtpForm,
+        fromEmail: finalFromEmail
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(smtpForm),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editingSmtpId ? "SMTP configuration updated!" : "SMTP configuration saved!");
@@ -1534,25 +1541,14 @@ export default function Home() {
                 </div>
 
                 <div className="row mb-2">
-                  <div className="col-6">
+                  <div className="col-12">
                     <label className="form-label fw-semibold small mb-1" style={{ color: "#334155" }}>From Name <span className="text-danger">*</span></label>
                     <input 
                       type="text" 
                       className="form-control shadow-none" 
-                      placeholder="Your Name" 
+                      placeholder="Your Name (e.g. CS Formly)" 
                       value={smtpForm.fromName}
                       onChange={(e) => setSmtpForm({...smtpForm, fromName: e.target.value})}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label fw-semibold small mb-1" style={{ color: "#334155" }}>From Email <span className="text-danger">*</span></label>
-                    <input 
-                      type="email" 
-                      className="form-control shadow-none" 
-                      placeholder="noreply@domain.com" 
-                      value={smtpForm.fromEmail}
-                      onChange={(e) => setSmtpForm({...smtpForm, fromEmail: e.target.value})}
                       style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
                     />
                   </div>
