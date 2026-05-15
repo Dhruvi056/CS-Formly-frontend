@@ -318,7 +318,14 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
               </div>
               <h5 className="modal-title fw-bold text-body mb-0" style={{ fontSize: '17px' }}>Create New...</h5>
             </div>
-            <button type="button" className="btn-close shadow-none" onClick={onClose}></button>
+            <button 
+              type="button" 
+              className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute" 
+              onClick={onClose}
+              style={{ transition: "opacity 0.2s", top: "20px", right: "20px" }}
+            >
+              <LucideIcon name="x" className="icon-md" />
+            </button>
           </div>
 
           <div className="modal-body p-4 pt-3">

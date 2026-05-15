@@ -57,6 +57,8 @@ export default function Home() {
   const [showSMTPModal, setShowSMTPModal] = useState(false);
   
   // SMTP Form State
+  const [showSmtpDeleteModal, setShowSmtpDeleteModal] = useState(false);
+  const [smtpToDeleteId, setSmtpToDeleteId] = useState(null);
   const [smtpForm, setSmtpForm] = useState({
     host: "",
     port: "587",
@@ -65,7 +67,7 @@ export default function Home() {
     password: "",
     fromName: "",
     fromEmail: "",
-    isDefault: true
+    isDefault: false
   });
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpSaving, setSmtpSaving] = useState(false);
@@ -180,13 +182,20 @@ export default function Home() {
 
   // --- SYNC ROUTE STATE ---
   const [showProfileView, setShowProfileView] = useState(location.pathname === "/profile");
-  const [profileSection, setProfileSection] = useState("account");
+  const [profileSection, setProfileSection] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "account";
+  });
 
   useEffect(() => {
     if (location.pathname === "/profile") {
       setShowProfileView(true);
       setSelectedForm(null);
+      const params = new URLSearchParams(location.search);
+      const tab = params.get("tab");
+      if (tab) setProfileSection(tab);
     } else if (location.pathname.startsWith("/admin")) {
+// ... (rest same)
       setShowProfileView(false);
       setSelectedForm(null);
       if (location.pathname === "/admin/users") setSuperAdminSection("users");
@@ -485,30 +494,41 @@ export default function Home() {
     setShowSMTPModal(true);
   };
 
-  const handleDeleteSmtp = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this SMTP config?")) return;
+  const handleDeleteSmtp = (id) => {
+    setSmtpToDeleteId(id);
+    setShowSmtpDeleteModal(true);
+  };
+
+  const confirmDeleteSmtp = async () => {
+    if (!smtpToDeleteId) return;
     try {
       const token = localStorage.getItem("authToken");
-      const res = await fetch(`/api/smtp/${id}`, {
+      const res = await fetch(`/api/smtp/${smtpToDeleteId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        toast.success("SMTP config deleted");
+        toast.success("SMTP configuration removed");
+        setShowSmtpDeleteModal(false);
+        setSmtpToDeleteId(null);
         fetchSmtpConfigs();
       } else {
-        toast.error("Failed to delete config");
+        toast.error("Failed to delete configuration");
       }
     } catch (err) {
-      toast.error("An error occurred");
+      toast.error("An error occurred during deletion");
     }
   };
 
   const openProfileView = (section) => {
     setShowProfileMenu(false);
     setShowEditProfile(false);
-    setProfileSection(section);
-    navigate("/profile");
+    if (section) {
+      setProfileSection(section);
+      navigate(`/profile?tab=${section}`);
+    } else {
+      navigate("/profile");
+    }
     if (section === "billing") fetchPlanHistory();
     if (section === "usage") fetchUsageData();
     if (section === "smtp") fetchSmtpConfigs();
@@ -887,7 +907,7 @@ export default function Home() {
                             padding: "10px 12px",
                             lineHeight: "1"
                           }}
-                          onClick={() => setProfileSection("account")}
+                          onClick={() => openProfileView("account")}
                         >
                           <LucideIcon name="user" className="icon-sm" />
                           <span>Account</span>
@@ -906,10 +926,7 @@ export default function Home() {
                                 padding: "10px 12px",
                                 lineHeight: "1"
                               }}
-                              onClick={() => {
-                                setProfileSection("billing");
-                                fetchPlanHistory();
-                              }}
+                              onClick={() => openProfileView("billing")}
                             >
                               <LucideIcon name="credit-card" className="icon-sm" />
                               <span>Billing</span>
@@ -929,10 +946,7 @@ export default function Home() {
                                 padding: "10px 12px",
                                 lineHeight: "1"
                               }}
-                              onClick={() => {
-                                setProfileSection("usage");
-                                fetchUsageData();
-                              }}
+                              onClick={() => openProfileView("usage")}
                             >
                               <LucideIcon name="activity" className="icon-sm" />
                               <span>Usage</span>
@@ -948,7 +962,7 @@ export default function Home() {
                                 borderRadius: "6px",
                                 padding: "10px 12px",
                               }}
-                              onClick={() => setProfileSection("smtp")}
+                              onClick={() => openProfileView("smtp")}
                             >
                               <LucideIcon name="server" className="icon-sm" />
                               <span>SMTP Configurations</span>
@@ -1023,25 +1037,41 @@ export default function Home() {
                                   onClick={() => setShowDeleteModal(false)}
                                 >
                                   <div
-                                    className="bg-white p-4 rounded shadow"
-                                    style={{ width: "400px" }}
+                                    className="bg-white p-4 shadow-lg border-0"
+                                    style={{ width: "450px", borderRadius: 16 }}
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <h5 className="mb-3 fw-bold text-danger">Delete Account</h5>
-
-                                    <p className="text-muted small">
-                                      This action is permanent. All your data, forms, and submissions will be deleted.
-                                    </p>
-
-                                    <div className="d-flex justify-content-end gap-2 mt-4">
+                                    <div className="d-flex align-items-start justify-content-between mb-4">
+                                      <div className="d-flex gap-3">
+                                        <div className="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                                          <LucideIcon name="trash-2" className="text-danger" style={{ width: 20, height: 20 }} />
+                                        </div>
+                                        <div>
+                                          <h5 className="mb-1 fw-bold text-dark">Delete Account?</h5>
+                                          <p className="text-muted small mb-0">
+                                            This action is permanent. All your data, forms, and submissions will be deleted. This cannot be undone.
+                                          </p>
+                                        </div>
+                                      </div>
                                       <button
                                         type="button"
-                                        className="btn"
+                                        className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute"
+                                        aria-label="Close"
+                                        onClick={() => setShowDeleteModal(false)}
+                                        style={{ transition: "opacity 0.2s", top: "15px", right: "15px" }}
+                                      >
+                                        <LucideIcon name="x" style={{ width: 20, height: 20 }} />
+                                      </button>
+                                    </div>
+
+                                    <div className="d-flex justify-content-end gap-2 mt-2">
+                                      <button
+                                        type="button"
+                                        className="btn btn-light px-4"
                                         onClick={() => setShowDeleteModal(false)}
                                         style={{
-                                          border: "1px solid #6571ff",
-                                          color: "#6571ff",
-                                          borderRadius: "6px"
+                                          borderRadius: "8px",
+                                          fontWeight: "500"
                                         }}
                                       >
                                         Cancel
@@ -1049,12 +1079,11 @@ export default function Home() {
 
                                       <button
                                         type="button"
-                                        className="btn text-white"
+                                        className="btn btn-danger px-4"
                                         onClick={handleDeleteAccount}
                                         style={{
-                                          backgroundColor: "#dc2626",
-                                          border: "1px solid #dc2626",
-                                          borderRadius: "6px"
+                                          borderRadius: "8px",
+                                          fontWeight: "500"
                                         }}
                                       >
                                         Delete Permanently
@@ -1361,10 +1390,13 @@ export default function Home() {
               <h5 className="mb-0 fw-bold">Change Password</h5>
               <button
                 type="button"
-                className="btn-close"
+                className="btn border-0 p-1 opacity-50 hover-opacity-100"
                 aria-label="Close"
                 onClick={() => setShowPasswordModal(false)}
-              />
+                style={{ transition: "opacity 0.2s" }}
+              >
+                <LucideIcon name="x" style={{ width: 20, height: 20 }} />
+              </button>
             </div>
 
             <form
@@ -1472,7 +1504,14 @@ export default function Home() {
                     {editingSmtpId ? "Update your SMTP settings" : "Configure personal SMTP settings"}
                   </p>
                 </div>
-                <button type="button" className="btn-close shadow-none" style={{ padding: "0.5rem" }} onClick={() => setShowSMTPModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn border-0 p-1 opacity-50 hover-opacity-100 shadow-none"
+                  onClick={() => setShowSMTPModal(false)}
+                  style={{ transition: "opacity 0.2s" }}
+                >
+                  <LucideIcon name="x" style={{ width: 20, height: 20 }} />
+                </button>
               </div>
               
               <div className="modal-body px-4 py-4">
@@ -1593,6 +1632,38 @@ export default function Home() {
                 >
                   {smtpSaving ? "Saving..." : (editingSmtpId ? "Update Now" : "Save Now")}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSmtpDeleteModal && (
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 12000 }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 400 }}>
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 16 }}>
+              <div className="modal-header border-0 pb-0 pt-4 px-4">
+                <div className="d-flex gap-3 align-items-start">
+                  <div className="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                    <LucideIcon name="trash-2" className="text-danger" style={{ width: 20, height: 20 }} />
+                  </div>
+                  <div>
+                    <h5 className="modal-title fw-bold mb-1">Delete SMTP?</h5>
+                    <p className="text-muted small mb-0">Are you sure you want to remove this SMTP configuration? This action cannot be undone.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute"
+                  onClick={() => setShowSmtpDeleteModal(false)}
+                  style={{ transition: "opacity 0.2s", top: "15px", right: "15px" }}
+                >
+                  <LucideIcon name="x" style={{ width: 20, height: 20 }} />
+                </button>
+              </div>
+              <div className="modal-footer border-0 px-4 pb-4 pt-4">
+                <button className="btn btn-light px-4" onClick={() => setShowSmtpDeleteModal(false)} style={{ borderRadius: "8px", fontWeight: "500" }}>Cancel</button>
+                <button className="btn btn-danger px-4" onClick={confirmDeleteSmtp} style={{ borderRadius: "8px", fontWeight: "500" }}>Delete Now</button>
               </div>
             </div>
           </div>
