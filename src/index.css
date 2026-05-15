@@ -106,140 +106,92 @@ input:focus-visible {
   background: #a8a8a8;
 }
 
-/* ============================================================
-   DESKTOP SIDEBAR: folded (icon-only) + smooth transitions
-   Only applies on screens ≥ 992px
-   ============================================================ */
-@media (min-width: 992px) {
-  /* Smooth transitions for sidebar collapse/expand */
-  .sidebar {
-    transition: width 0.25s ease, min-width 0.25s ease;
-  }
-
-  .page-wrapper {
-    transition: margin-left 0.25s ease;
-  }
-
-  /* Hide text labels / extra items when sidebar is folded */
-  body.sidebar-folded .sidebar .nav-category,
-  body.sidebar-folded .sidebar .link-title,
-  body.sidebar-folded .sidebar .link-arrow,
-  body.sidebar-folded .sidebar .badge,
-  body.sidebar-folded .sidebar .nav.sub-menu,
-  body.sidebar-folded .sidebar .sidebar-brand span,
-  body.sidebar-folded .sidebar .sidebar-body .nav-item > div {
-    display: none !important;
-  }
-
-  body.sidebar-folded .sidebar .sidebar-brand {
-    justify-content: center;
-  }
-
-  body.sidebar-folded .sidebar .sidebar-body .nav-link {
-    justify-content: center !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-
-  /* Collapse sidebar to icon-only width */
-  body.sidebar-folded .sidebar {
-    width: 70px !important;
-    min-width: 70px !important;
-  }
-
-  body.sidebar-folded .sidebar .sidebar-header {
-    width: 70px !important;
-    min-width: 70px !important;
-    justify-content: center;
-    padding: 0 !important;
-  }
-
-  /* Shift page content left to match folded sidebar width */
-  body.sidebar-folded .page-wrapper {
-    margin-left: 70px !important;
-  }
+/* Sidebar folded: keep clean icon-only layout */
+body.sidebar-folded .sidebar .nav-category,
+body.sidebar-folded .sidebar .link-title,
+body.sidebar-folded .sidebar .link-arrow,
+body.sidebar-folded .sidebar .badge,
+body.sidebar-folded .sidebar .nav.sub-menu,
+body.sidebar-folded .sidebar .sidebar-brand span,
+body.sidebar-folded .sidebar .sidebar-body .nav-item>div {
+  display: none !important;
 }
 
-/* ============================================================
-   MOBILE & TABLET SIDEBAR (≤ 991px)
-   Sidebar slides in from the left as an overlay
-   ============================================================ */
-@media (max-width: 991px) {
+body.sidebar-folded .sidebar .sidebar-brand {
+  justify-content: center;
+}
 
-  /* Force sidebar off-screen, fixed overlay */
-  nav.sidebar,
+body.sidebar-folded .sidebar .sidebar-body .nav-link {
+  justify-content: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* --- Responsive Sidebar (Mobile & Tablet) --- */
+
+@media (max-width: 991px) {
+  #root {
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
   .main-wrapper .sidebar {
     position: fixed !important;
     top: 0 !important;
-    left: -260px !important;
-    bottom: 0 !important;
-    z-index: 1055 !important;
+    left: -240px !important;
     width: 240px !important;
-    min-width: 240px !important;
-    max-width: 240px !important;
-    background: #fff !important;
-    transition: left 0.3s ease !important;
-    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.18) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    height: 100vh !important;
+    z-index: 2000 !important;
+    transition: left 0.3s ease-in-out !important;
     display: flex !important;
     flex-direction: column !important;
+    background-color: var(--bs-body-bg) !important;
+    box-shadow: 10px 0 20px rgba(0, 0, 0, 0.05) !important;
   }
 
-  /* Slide in when open */
-  body.sidebar-open nav.sidebar,
-  body.sidebar-open .main-wrapper .sidebar {
+  body.sidebar-open .sidebar {
     left: 0 !important;
   }
 
-  /* Hide the sidebar's own toggle button on mobile (use navbar hamburger instead) */
-  nav.sidebar .sidebar-toggler,
-  .sidebar .sidebar-toggler {
-    display: none !important;
-  }
-
-  /* Dark backdrop overlay */
-  body.sidebar-open::after {
-    content: '';
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    z-index: 1040 !important;
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-
-  /* Page content: always full width, no left margin on mobile */
-  .page-wrapper,
   .main-wrapper .page-wrapper {
     margin-left: 0 !important;
     width: 100% !important;
-    transition: none !important;
+    min-height: 100vh !important;
   }
 
-  /* Sidebar header always full width */
-  .sidebar .sidebar-header {
-    width: 240px !important;
-    min-width: 240px !important;
-  }
-
-  /* Disable sidebar-folded state on mobile */
-  body.sidebar-folded nav.sidebar,
-  body.sidebar-folded .main-wrapper .sidebar {
-    left: -260px !important;
-    width: 240px !important;
-    min-width: 240px !important;
-  }
-
-  body.sidebar-folded.sidebar-open nav.sidebar,
-  body.sidebar-folded.sidebar-open .main-wrapper .sidebar {
+  .main-wrapper .page-wrapper .navbar {
     left: 0 !important;
+    width: 100% !important;
   }
 
-  body.sidebar-folded .page-wrapper,
-  body.sidebar-folded .main-wrapper .page-wrapper {
-    margin-left: 0 !important;
+  /* Overlay when sidebar is open */
+  body.sidebar-open::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* Hide search form on small screens in navbar */
+  .navbar .search-form {
+    display: none !important;
   }
 }
+
+/* Fix for 425px and 320px */
+@media (max-width: 767px) {
+  .sidebar {
+    width: 240px !important;
+  }
+  
+  .navbar-content {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}

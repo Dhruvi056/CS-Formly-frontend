@@ -253,23 +253,39 @@ export function AuthProvider({ children }) {
   // --- INITIALIZATION ---
 
   useEffect(() => {
-    // 1. Check local session first (prioritize the custom Node.js backend)
-    const token = localStorage.getItem("authToken");
-    const storedUser = localStorage.getItem("authUser");
+    const initAuth = async () => {
+      const token = localStorage.getItem("authToken");
+      const storedUser = localStorage.getItem("authUser");
 
-    if (token && storedUser) {
-      try {
-        updateAuthState(JSON.parse(storedUser));
-        setLoading(false);
-        return;
-      } catch (e) {
-        console.error("Session restoration error:", e);
-        logout(); // Clear potentially corrupted session
+      if (token && storedUser) {
+        try {
+          // Verify token by fetching profile
+          const response = await fetch("/api/auth/profile", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            updateAuthState(data);
+          } else if (response.status === 401) {
+            // Token expired or invalid
+            logout();
+          } else {
+            // Other server error, maybe transient? 
+            // For now, trust stored state but we could be stricter.
+            updateAuthState(JSON.parse(storedUser));
+          }
+        } catch (e) {
+          console.error("Session restoration error:", e);
+          // If offline, maybe keep user logged in? 
+          // But if we want strict redirection on expiry, we should be careful.
+          updateAuthState(JSON.parse(storedUser));
+        }
       }
-    }
-    // No Firebase fallback: fully Mongo/JWT session
-    setLoading(false);
-    return;
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   // --- CONTEXT PROVIDER ---

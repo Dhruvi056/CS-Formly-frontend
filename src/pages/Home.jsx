@@ -178,16 +178,6 @@ export default function Home() {
     };
   }, [currentUser, selectedForm?.formId]);
 
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (document.body.classList.contains('sidebar-open') && !e.target.closest('.sidebar') && !e.target.closest('.navbar-toggler')) {
-        document.body.classList.remove('sidebar-open');
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
-
   // --- SYNC ROUTE STATE ---
   const [showProfileView, setShowProfileView] = useState(location.pathname === "/profile");
   const [profileSection, setProfileSection] = useState("account");
@@ -428,8 +418,10 @@ export default function Home() {
   };
 
   const handleSaveSmtp = async () => {
-    const { host, port, username, password, fromName, fromEmail } = smtpForm;
-    if (!host || !port || !username || ( !editingSmtpId && !password) || !fromName || !fromEmail) {
+    const { host, port, username, password, fromName } = smtpForm;
+    const finalFromEmail = username; // Automatically use username as fromEmail
+    
+    if (!host || !port || !username || ( !editingSmtpId && !password) || !fromName) {
       return toast.error("Please fill in all required fields.");
     }
     setSmtpSaving(true);
@@ -438,13 +430,18 @@ export default function Home() {
       const url = editingSmtpId ? `/api/smtp/${editingSmtpId}` : "/api/smtp";
       const method = editingSmtpId ? "PUT" : "POST";
 
+      const payload = {
+        ...smtpForm,
+        fromEmail: finalFromEmail
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(smtpForm),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast.success(editingSmtpId ? "SMTP configuration updated!" : "SMTP configuration saved!");
@@ -538,7 +535,6 @@ export default function Home() {
 
 
   const handleSelectForm = (form) => {
-    document.body.classList.remove('sidebar-open');
     setShowProfileView(false);
     if (form) {
       setSuperAdminSection("dashboard");
@@ -678,10 +674,11 @@ export default function Home() {
       <div className="page-wrapper">
         <nav className="navbar" style={{ zIndex: 1000 }}>
           <div className="navbar-content">
-            <button 
-              className="navbar-toggler border-0 p-0 me-3 d-md-none" 
-              type="button" 
-              onClick={() => document.body.classList.toggle('sidebar-open')}
+            <button
+              className="navbar-toggler border-0 bg-transparent p-0 me-2 d-lg-none"
+              type="button"
+              onClick={() => document.body.classList.toggle("sidebar-open")}
+              aria-label="Toggle Sidebar"
             >
               <LucideIcon name="menu" className="icon-md" />
             </button>
@@ -986,11 +983,11 @@ export default function Home() {
                                 <input type="text" className="form-control form-control-sm" value={editJoined} />
                               </div>
                             </div>
-                            <div className="mt-3 d-flex gap-2" style={{ flexWrap: "nowrap", alignItems: "center" }}>
+                            <div className="mt-3 d-flex gap-2">
                               <button
                                 type="submit"
                                 className="btn text-white"
-                                style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem", whiteSpace: "nowrap", flexShrink: 0 }}
+                                style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
                               >
                                 Save Changes
                               </button>
@@ -999,7 +996,7 @@ export default function Home() {
                                 type="button"
                                 className="btn bg-transparent"
                                 onClick={() => setShowPasswordModal(true)}
-                                style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem", whiteSpace: "nowrap", flexShrink: 0 }}
+                                style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
                               >
                                 Change Password
                               </button>
@@ -1014,9 +1011,7 @@ export default function Home() {
                                   fontWeight: "500",
                                   padding: "0.35rem 1rem",
                                   fontSize: "0.85rem",
-                                  marginLeft: "auto",
-                                  whiteSpace: "nowrap",
-                                  flexShrink: 0
+                                  marginLeft: "auto"
                                 }}
                               >
                                 Delete Account
@@ -1546,25 +1541,14 @@ export default function Home() {
                 </div>
 
                 <div className="row mb-2">
-                  <div className="col-6">
+                  <div className="col-12">
                     <label className="form-label fw-semibold small mb-1" style={{ color: "#334155" }}>From Name <span className="text-danger">*</span></label>
                     <input 
                       type="text" 
                       className="form-control shadow-none" 
-                      placeholder="Your Name" 
+                      placeholder="Your Name (e.g. CS Formly)" 
                       value={smtpForm.fromName}
                       onChange={(e) => setSmtpForm({...smtpForm, fromName: e.target.value})}
-                      style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label fw-semibold small mb-1" style={{ color: "#334155" }}>From Email <span className="text-danger">*</span></label>
-                    <input 
-                      type="email" 
-                      className="form-control shadow-none" 
-                      placeholder="noreply@domain.com" 
-                      value={smtpForm.fromEmail}
-                      onChange={(e) => setSmtpForm({...smtpForm, fromEmail: e.target.value})}
                       style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
                     />
                   </div>
