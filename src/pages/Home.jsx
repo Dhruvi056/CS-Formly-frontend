@@ -441,7 +441,8 @@ export default function Home() {
 
       const payload = {
         ...smtpForm,
-        fromEmail: finalFromEmail
+        fromEmail: finalFromEmail,
+        isDefault: true,
       };
 
       const res = await fetch(url, {
@@ -1219,38 +1220,40 @@ export default function Home() {
                         {profileSection === "smtp" && (
                           <div>
                             <div className="d-flex justify-content-between align-items-center mb-3">
-                              <h5 className="fw-bold">SMTP Configs</h5>
+                              <h5 className="fw-bold">SMTP Config</h5>
 
-                                <button
-                                  className="btn text-white"
-                                  style={{
-                                    backgroundColor: "#6571ff",
-                                    borderRadius: "6px",
-                                  }}
-                                  onClick={() => {
-                                    setEditingSmtpId(null);
-                                    setSmtpForm({
-                                      host: "",
-                                      port: "587",
-                                      encryption: "TLS",
-                                      username: "",
-                                      password: "",
-                                      fromName: "",
-                                      fromEmail: "",
-                                      isDefault: smtpList.length === 0
-                                    });
-                                    setShowSMTPModal(true);
-                                  }}
-                                >
-                                  + Add SMTP Server
-                                </button>
+                                {smtpList.length === 0 && (
+                                  <button
+                                    className="btn text-white"
+                                    style={{
+                                      backgroundColor: "#6571ff",
+                                      borderRadius: "6px",
+                                    }}
+                                    onClick={() => {
+                                      setEditingSmtpId(null);
+                                      setSmtpForm({
+                                        host: "",
+                                        port: "587",
+                                        encryption: "TLS",
+                                        username: "",
+                                        password: "",
+                                        fromName: "",
+                                        fromEmail: "",
+                                        isDefault: true
+                                      });
+                                      setShowSMTPModal(true);
+                                    }}
+                                  >
+                                    + Add SMTP Server
+                                  </button>
+                                )}
                             </div>
 
                             {smtpList.length === 0 ? (
                               <div className="d-flex flex-column align-items-center justify-content-center py-4 px-4 border rounded-4 bg-white shadow-sm mt-2" style={{ minHeight: '220px', maxWidth: '800px' }}>
-                                <h6 className="fw-bold text-dark mb-1">No SMTP Configurations Found</h6>
+                                <h6 className="fw-bold text-dark mb-1">No SMTP Configuration Found</h6>
                                 <p className="text-secondary mx-auto mb-0" style={{ maxWidth: '450px', fontSize: '13px', lineHeight: '1.4' }}>
-                                  Add your first SMTP server to start sending branded emails.
+                                  Add your SMTP server (one account, e.g. HR) to send branded emails.
                                 </p>
                               </div>
                             ) : (
@@ -1501,7 +1504,7 @@ export default function Home() {
                     {editingSmtpId ? "Edit SMTP Configuration" : "Add SMTP Configuration"}
                   </h6>
                   <p className="text-secondary mb-0" style={{ fontSize: "0.75rem" }}>
-                    {editingSmtpId ? "Update your SMTP settings" : "Configure personal SMTP settings"}
+                    {editingSmtpId ? "Update your SMTP settings" : "One SMTP account per workspace (e.g. HR email)"}
                   </p>
                 </div>
                 <button
