@@ -226,8 +226,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   }, [showEmailModal]);
 
   const [viewingSubmission, setViewingSubmission] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const selectAllRef = useRef(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
   const [renameSaving, setRenameSaving] = useState(false);
@@ -596,19 +598,38 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   };
 
   const confirmDelete = async () => {
-    if (!deleteId) return;
+    if (!pendingDeleteIds?.length) return;
     setIsDeleting(true);
     try {
       const token = localStorage.getItem("authToken");
-      const res = await fetch(`/api/submissions/${deleteId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const ids = pendingDeleteIds;
+      const res =
+        ids.length === 1
+          ? await fetch(`/api/submissions/${ids[0]}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          : await fetch("/api/submissions/bulk-delete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ ids }),
+            });
+
       if (res.ok) {
-        setSubmissions((prev) => prev.filter((s) => s.id !== deleteId));
-        setDeleteId(null);
-        toast.success("Deleted successfully.");
+        const removed = new Set(ids);
+        setSubmissions((prev) => prev.filter((s) => !removed.has(s.id)));
+        setSelectedIds((prev) => prev.filter((id) => !removed.has(id)));
+        setPendingDeleteIds(null);
+        toast.success(
+          ids.length === 1 ? "Deleted successfully." : `${ids.length} submissions deleted.`
+        );
         onFormUpdated?.({ refreshUsage: true });
+      } else {
+        const errBody = await res.json().catch(() => ({}));
+        toast.error(errBody.message || "Delete failed.");
       }
     } catch (err) {
       toast.error("Delete failed.");
@@ -712,6 +733,47 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       return matchInFields || sub.submittedAt.toLowerCase().includes(s);
     });
   }, [normalizedSubmissions, searchQuery, fields]);
+
+  const visibleSubmissionIds = useMemo(
+    () => filteredSubmissions.map((s) => s.id),
+    [filteredSubmissions]
+  );
+
+  const allVisibleSelected =
+    visibleSubmissionIds.length > 0 &&
+    visibleSubmissionIds.every((id) => selectedIds.includes(id));
+
+  const someSelected = selectedIds.length > 0;
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [form?.formId]);
+
+  useEffect(() => {
+    const visible = new Set(visibleSubmissionIds);
+    setSelectedIds((prev) => prev.filter((id) => visible.has(id)));
+  }, [visibleSubmissionIds]);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allVisibleSelected;
+    }
+  }, [someSelected, allVisibleSelected]);
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      const visible = new Set(visibleSubmissionIds);
+      setSelectedIds((prev) => prev.filter((id) => !visible.has(id)));
+    } else {
+      setSelectedIds((prev) => [...new Set([...prev, ...visibleSubmissionIds])]);
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const ownerEmail = userMeta?.email || currentUser?.email || "";
   const ownerInitial = getEmailInitial(ownerEmail);
@@ -851,7 +913,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
       <div className="col-md-12 flex-grow-1 overflow-hidden d-flex flex-column">
         <div className="card shadow-sm border-0 flex-grow-1 overflow-hidden">
           <div className="card-body d-flex flex-column">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="card-title mb-0">
                   Submissions ({filteredSubmissions.length})
                 </h6>
@@ -863,6 +925,34 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 {loadingSubmissions ? "Refreshing..." : "Refresh"}
               </button>
             </div>
+
+            {someSelected && (
+              <div
+                className="d-flex align-items-center gap-3 mb-3 px-3 py-2 rounded-3 fd-submissions-bulk-bar"
+                role="toolbar"
+                aria-label="Bulk actions"
+              >
+                <span className="small fw-semibold text-secondary">
+                  {selectedIds.length} selected
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-link text-danger p-0 d-inline-flex align-items-center gap-1 text-decoration-none"
+                  onClick={() => setPendingDeleteIds([...selectedIds])}
+                  title="Delete selected"
+                >
+                  <LucideIcon name="trash-2" className="icon-sm" />
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-link text-secondary p-0 text-decoration-none ms-auto"
+                  onClick={() => setSelectedIds([])}
+                >
+                  Clear selection
+                </button>
+              </div>
+            )}
 
             {submissions.length === 0 ? (
               <div
@@ -881,6 +971,17 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 <table className="table table-hover align-middle">
                   <thead className="bg-light sticky-top" style={{ zIndex: 5 }}>
                     <tr>
+                      <th className="text-center" style={{ width: 44 }}>
+                        <input
+                          ref={selectAllRef}
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={allVisibleSelected}
+                          onChange={toggleSelectAllVisible}
+                          disabled={filteredSubmissions.length === 0}
+                          aria-label="Select all submissions"
+                        />
+                      </th>
                       {fields.map((f) => (
                         <th
                           key={f}
@@ -899,7 +1000,19 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                   </thead>
                   <tbody>
                     {filteredSubmissions.map((sub) => (
-                      <tr key={sub.id}>
+                      <tr
+                        key={sub.id}
+                        className={selectedIds.includes(sub.id) ? "table-primary" : undefined}
+                      >
+                        <td className="text-center">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={selectedIds.includes(sub.id)}
+                            onChange={() => toggleSelectOne(sub.id)}
+                            aria-label={`Select submission ${sub.id}`}
+                          />
+                        </td>
                         {fields.map((f) => {
                           const val = sub.data?.[f];
                           const fileLinks = getFileLinks(f, val);
@@ -959,7 +1072,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                             </button>
                             <button
                               className="btn btn-sm p-1 text-danger"
-                              onClick={() => setDeleteId(sub.id)}
+                              onClick={() => setPendingDeleteIds([sub.id])}
                             >
                               <LucideIcon name="trash-2" className="icon-sm" />
                             </button>
@@ -1817,7 +1930,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
         )}
 
       {/* ── Delete Confirmation Modal ── */}
-      {deleteId && (
+      {pendingDeleteIds && pendingDeleteIds.length > 0 && (
         <div
           className="modal show d-block"
           style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 12000 }}
@@ -1843,10 +1956,15 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     />
                   </div>
                   <div>
-                    <h5 className="modal-title fw-bold mb-1">Delete Submission?</h5>
+                    <h5 className="modal-title fw-bold mb-1">
+                      {pendingDeleteIds.length === 1
+                        ? "Delete submission?"
+                        : `Delete ${pendingDeleteIds.length} submissions?`}
+                    </h5>
                     <p className="text-muted small mb-0">
-                      This will remove the submission from the list. You can't undo
-                      this action.
+                      {pendingDeleteIds.length === 1
+                        ? "This will remove the submission from the list. You can't undo this action."
+                        : "These submissions will be removed from the list. You can't undo this action."}
                     </p>
                   </div>
                 </div>
@@ -1854,7 +1972,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                   type="button"
                   className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute"
                   aria-label="Close"
-                  onClick={() => setDeleteId(null)}
+                  onClick={() => setPendingDeleteIds(null)}
                   style={{ transition: "opacity 0.2s", top: "15px", right: "15px" }}
                 >
                   <LucideIcon name="x" style={{ width: 20, height: 20 }} />
@@ -1876,7 +1994,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
               <div className="modal-footer border-0 px-4 pb-4 pt-3">
                 <button
                   className="btn btn-light px-4"
-                  onClick={() => setDeleteId(null)}
+                  onClick={() => setPendingDeleteIds(null)}
                   disabled={isDeleting}
                 >
                   No, cancel
