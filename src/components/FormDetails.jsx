@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -34,13 +35,27 @@ function isProbablyFileFieldName(fieldName) {
 
 function looksLikeUrl(v) {
   if (typeof v !== "string") return false;
-  const lower = v.toLowerCase();
-  return lower.startsWith("http://") || lower.startsWith("https://");
+  const lower = v.toLowerCase().trim();
+  if (lower.startsWith("http://") || lower.startsWith("https://")) return true;
+  // Catch common domains if they look like a path
+  return (
+    lower.includes("linkedin.com/") ||
+    lower.includes("github.com/") ||
+    lower.includes("portfolio") ||
+    lower.includes("behance.net/") ||
+    lower.includes("dribbble.com/") ||
+    /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i.test(lower)
+  );
 }
 
 function looksLikeFileName(v) {
   if (typeof v !== "string") return false;
   return /\.(pdf|doc|docx|xls|xlsx|csv|txt|png|jpe?g|gif|zip|rar|webp)$/i.test(v.trim());
+}
+
+function looksLikeEmail(v) {
+  if (typeof v !== "string") return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
 function getFileLinks(fieldName, value) {
@@ -49,22 +64,30 @@ function getFileLinks(fieldName, value) {
   const push = (v) => {
     if (!v) return;
     if (typeof v === "string") {
-      if (looksLikeUrl(v)) {
-        const url = v;
+      const trimmed = v.trim();
+      if (looksLikeUrl(trimmed)) {
+        let url = trimmed;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+          url = `https://${url}`;
+        }
         const label = (() => {
           try {
             const u = new URL(url);
             const last = (u.pathname || "").split("/").filter(Boolean).pop();
-            return last || "file";
+            return last || "link";
           } catch {
-            return "file";
+            return "link";
           }
         })();
         links.push({ url, label });
         return;
       }
-      if (looksLikeFileName(v) || isProbablyFileFieldName(fieldName)) {
-        links.push({ url: "", label: v });
+      if (looksLikeEmail(trimmed)) {
+        links.push({ url: `mailto:${trimmed}`, label: trimmed });
+        return;
+      }
+      if (looksLikeFileName(trimmed) || isProbablyFileFieldName(fieldName)) {
+        links.push({ url: "", label: trimmed });
       }
       return;
     }
@@ -160,8 +183,17 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
   const { currentUser, userMeta } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [copied, setCopied] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailModalTab, setEmailModalTab] = useState("notifications"); // "notifications" or "autoresponder"
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [showEmailModal, setShowEmailModal] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("modal") === "email";
+  });
+  const [emailModalTab, setEmailModalTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "notifications";
+  });
   const [emailInput, setEmailInput] = useState("");
   const [emailsList, setEmailsList] = useState([]);
   const [ccEmailInput, setCcEmailInput] = useState("");
@@ -707,6 +739,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 onClick={() => {
                   setEmailModalTab("notifications");
                   setShowEmailModal(true);
+                  navigate(`${location.pathname}?modal=email&tab=notifications`, { replace: true });
                 }}
                 className="btn fd-btn-notify"
               >
@@ -884,20 +917,20 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                     <button
                                       key={`${l.url || l.label}-${idx}`}
                                       type="button"
-                                      className="btn btn-link p-0 text-start text-decoration-none"
+                                      className="btn btn-link p-0 text-start text-decoration-none fw-normal"
                                       onClick={() =>
                                         openFile(l.url, l.label, sub.id, f)
                                       }
-                                      style={{ fontSize: 13, maxWidth: 120 }}
+                                      style={{ fontSize: 13, maxWidth: 120, fontWeight: 400 }}
                                       title={
                                         l.url
-                                          ? "Open / Download"
+                                          ? "Open / Link"
                                           : "No URL saved for this file"
                                       }
                                     >
                                       <span
                                         className="text-truncate d-inline-block align-bottom"
-                                        style={{ maxWidth: 120 }}
+                                        style={{ maxWidth: 120, fontWeight: 400 }}
                                       >
                                         {l.label}
                                       </span>
@@ -993,7 +1026,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                   <button
                                     key={`${l.url || l.label}-${idx}`}
                                     type="button"
-                                    className="btn btn-link btn-sm p-0 text-decoration-none"
+                                    className="btn btn-link btn-sm p-0 text-decoration-none fw-normal"
+                                    style={{ fontWeight: 400, fontSize: 13 }}
                                     onClick={() =>
                                       openFile(
                                         l.url,
@@ -1068,17 +1102,25 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     </div>
                     <button
                       type="button"
-                      className="btn-close"
-                      onClick={() => setShowEmailModal(false)}
-                      style={{ filter: "grayscale(1)", opacity: 0.5 }}
-                    />
+                      className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute"
+                      onClick={() => {
+                        setShowEmailModal(false);
+                        navigate(location.pathname, { replace: true });
+                      }}
+                      style={{ transition: "opacity 0.2s", top: "20px", right: "20px" }}
+                    >
+                      <LucideIcon name="x" style={{ width: 22, height: 22 }} />
+                    </button>
                   </div>
 
                   <ul className="nav nav-tabs border-bottom-0 gap-4" style={{ fontSize: 15 }}>
                     <li className="nav-item">
                       <button
                         className={`nav-link border-0 px-0 py-2 ${emailModalTab === "notifications" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
-                        onClick={() => setEmailModalTab("notifications")}
+                        onClick={() => {
+                          setEmailModalTab("notifications");
+                          navigate(`${location.pathname}?modal=email&tab=notifications`, { replace: true });
+                        }}
                         style={{
                           background: "transparent",
                           color: emailModalTab === "notifications" ? "#4F46E5" : "#6b7280",
@@ -1094,7 +1136,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                       <li className="nav-item">
                         <button
                           className={`nav-link border-0 px-0 py-2 ${emailModalTab === "customTemplate" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
-                          onClick={() => setEmailModalTab("customTemplate")}
+                          onClick={() => {
+                            setEmailModalTab("customTemplate");
+                            navigate(`${location.pathname}?modal=email&tab=customTemplate`, { replace: true });
+                          }}
                           style={{
                             background: "transparent",
                             color: emailModalTab === "customTemplate" ? "#4F46E5" : "#6b7280",
@@ -1111,7 +1156,10 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                       <li className="nav-item">
                         <button
                           className={`nav-link border-0 px-0 py-2 ${emailModalTab === "autoresponder" ? "active fw-bold text-primary" : "text-muted fw-medium"}`}
-                          onClick={() => setEmailModalTab("autoresponder")}
+                          onClick={() => {
+                            setEmailModalTab("autoresponder");
+                            navigate(`${location.pathname}?modal=email&tab=autoresponder`, { replace: true });
+                          }}
                           style={{
                             background: "transparent",
                             color: emailModalTab === "autoresponder" ? "#4F46E5" : "#6b7280",
@@ -1804,10 +1852,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                 </div>
                 <button
                   type="button"
-                  className="btn-close mt-1"
+                  className="btn border-0 p-1 opacity-50 hover-opacity-100 position-absolute"
                   aria-label="Close"
                   onClick={() => setDeleteId(null)}
-                />
+                  style={{ transition: "opacity 0.2s", top: "15px", right: "15px" }}
+                >
+                  <LucideIcon name="x" style={{ width: 20, height: 20 }} />
+                </button>
               </div>
               <div className="modal-body px-4 pt-3 pb-0">
                 <div className="alert alert-warning d-flex gap-2 align-items-start mb-0">
