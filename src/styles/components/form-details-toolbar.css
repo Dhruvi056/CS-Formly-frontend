@@ -322,3 +322,9 @@
 .fd-quill-container .ql-container {
   min-height: 200px;
 }
+
+/* Submissions bulk selection bar */
+.fd-submissions-bulk-bar {
+  background: color-mix(in srgb, var(--bs-primary) 8%, var(--bs-body-bg));
+  border: 1px solid color-mix(in srgb, var(--bs-primary) 22%, var(--bs-border-color));
+}
