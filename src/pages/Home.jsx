@@ -67,11 +67,23 @@ export default function Home() {
     password: "",
     fromName: "",
     fromEmail: "",
-    isDefault: false
+    assignedFormIds: [],
   });
+  const [smtpAssignableForms, setSmtpAssignableForms] = useState([]);
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpSaving, setSmtpSaving] = useState(false);
   const [editingSmtpId, setEditingSmtpId] = useState(null);
+
+  const emptySmtpForm = () => ({
+    host: "",
+    port: "587",
+    encryption: "TLS",
+    username: "",
+    password: "",
+    fromName: "",
+    fromEmail: "",
+    assignedFormIds: [],
+  });
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [superAdminSection, setSuperAdminSection] = useState(() => {
@@ -234,7 +246,10 @@ export default function Home() {
     if (!showProfileView) return;
     if (profileSection === "billing") fetchPlanHistory();
     if (profileSection === "usage") fetchUsageData();
-    if (profileSection === "smtp") fetchSmtpConfigs();
+    if (profileSection === "smtp") {
+      fetchSmtpConfigs();
+      fetchSmtpAssignableForms();
+    }
   }, [profileSection, showProfileView]);
 
   // --- MONGODB MIGRATION: Fetching Dashboard Metrics ---
@@ -398,6 +413,71 @@ export default function Home() {
     }
   };
 
+  const fetchSmtpAssignableForms = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/forms", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSmtpAssignableForms(
+        (Array.isArray(data) ? data : []).map((f) => ({
+          id: String(f._id),
+          name: f.name || "Untitled form",
+        }))
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getSmtpAssignedFormIds = (smtp) =>
+    (smtp?.assignedFormIds || []).map((item) =>
+      typeof item === "object" && item !== null && item._id
+        ? String(item._id)
+        : String(item)
+    );
+
+  const rebuildAssignedFormRefs = (ids) =>
+    ids.map((fid) => {
+      const form = smtpAssignableForms.find((f) => f.id === fid);
+      return form ? { _id: fid, name: form.name } : fid;
+    });
+
+  const toggleSmtpFormAssignment = (formId) => {
+    const id = String(formId);
+    setSmtpForm((prev) => {
+      const current = prev.assignedFormIds || [];
+      const isAdding = !current.includes(id);
+      const next = isAdding
+        ? [...current, id]
+        : current.filter((x) => x !== id);
+
+      if (isAdding) {
+        setSmtpList((list) =>
+          list.map((smtp) => {
+            if (String(smtp._id) === String(editingSmtpId)) return smtp;
+            const remaining = getSmtpAssignedFormIds(smtp).filter((x) => x !== id);
+            return {
+              ...smtp,
+              assignedFormIds: rebuildAssignedFormRefs(remaining),
+            };
+          })
+        );
+      }
+
+      return { ...prev, assignedFormIds: next };
+    });
+  };
+
+  const openAddSmtpModal = () => {
+    setEditingSmtpId(null);
+    setSmtpForm(emptySmtpForm());
+    fetchSmtpAssignableForms();
+    setShowSMTPModal(true);
+  };
+
   const handleTestSmtp = async () => {
     if (!smtpForm.host || !smtpForm.port || !smtpForm.username || !smtpForm.password) {
       return toast.error("Please fill in host, port, username, and password to test.");
@@ -440,9 +520,15 @@ export default function Home() {
       const method = editingSmtpId ? "PUT" : "POST";
 
       const payload = {
-        ...smtpForm,
+        host: smtpForm.host,
+        port: smtpForm.port,
+        encryption: smtpForm.encryption,
+        username: smtpForm.username,
+        password: smtpForm.password,
+        fromName: smtpForm.fromName,
         fromEmail: finalFromEmail,
-        isDefault: true,
+        ...(editingSmtpId ? {} : { isDefault: smtpList.length === 0 }),
+        assignedFormIds: smtpForm.assignedFormIds || [],
       };
 
       const res = await fetch(url, {
@@ -459,16 +545,7 @@ export default function Home() {
         setEditingSmtpId(null);
         fetchSmtpConfigs();
         // Reset form
-        setSmtpForm({
-          host: "",
-          port: "587",
-          encryption: "TLS",
-          username: "",
-          password: "",
-          fromName: "",
-          fromEmail: "",
-          isDefault: true
-        });
+        setSmtpForm(emptySmtpForm());
       } else {
         const data = await res.json();
         toast.error(data.message || "Failed to save SMTP");
@@ -487,11 +564,12 @@ export default function Home() {
       port: String(smtp.port) || "587",
       encryption: smtp.encryption || "TLS",
       username: smtp.username || "",
-      password: "", // Keep password empty for security, only update if user types new one
+      password: "",
       fromName: smtp.fromName || "",
       fromEmail: smtp.fromEmail || "",
-      isDefault: smtp.isDefault || false
+      assignedFormIds: getSmtpAssignedFormIds(smtp),
     });
+    fetchSmtpAssignableForms();
     setShowSMTPModal(true);
   };
 
@@ -532,7 +610,10 @@ export default function Home() {
     }
     if (section === "billing") fetchPlanHistory();
     if (section === "usage") fetchUsageData();
-    if (section === "smtp") fetchSmtpConfigs();
+    if (section === "smtp") {
+      fetchSmtpConfigs();
+      fetchSmtpAssignableForms();
+    }
   };
 
   const fetchPlanHistory = async () => {
@@ -1222,38 +1303,23 @@ export default function Home() {
                             <div className="d-flex justify-content-between align-items-center mb-3">
                               <h5 className="fw-bold">SMTP Config</h5>
 
-                                {smtpList.length === 0 && (
-                                  <button
-                                    className="btn text-white"
-                                    style={{
-                                      backgroundColor: "#6571ff",
-                                      borderRadius: "6px",
-                                    }}
-                                    onClick={() => {
-                                      setEditingSmtpId(null);
-                                      setSmtpForm({
-                                        host: "",
-                                        port: "587",
-                                        encryption: "TLS",
-                                        username: "",
-                                        password: "",
-                                        fromName: "",
-                                        fromEmail: "",
-                                        isDefault: true
-                                      });
-                                      setShowSMTPModal(true);
-                                    }}
-                                  >
-                                    + Add SMTP Server
-                                  </button>
-                                )}
+                              <button
+                                className="btn text-white"
+                                style={{
+                                  backgroundColor: "#6571ff",
+                                  borderRadius: "6px",
+                                }}
+                                onClick={openAddSmtpModal}
+                              >
+                                + Add SMTP Server
+                              </button>
                             </div>
 
                             {smtpList.length === 0 ? (
                               <div className="d-flex flex-column align-items-center justify-content-center py-4 px-4 border rounded-4 bg-white shadow-sm mt-2" style={{ minHeight: '220px', maxWidth: '800px' }}>
                                 <h6 className="fw-bold text-dark mb-1">No SMTP Configuration Found</h6>
                                 <p className="text-secondary mx-auto mb-0" style={{ maxWidth: '450px', fontSize: '13px', lineHeight: '1.4' }}>
-                                  Add your SMTP server (one account, e.g. HR) to send branded emails.
+                                  Add SMTP accounts and assign which forms send email through each one (e.g. Careers → HR inbox).
                                 </p>
                               </div>
                             ) : (
@@ -1274,8 +1340,10 @@ export default function Home() {
                                             <div className="fw-bold text-dark">{smtp.fromName}</div>
                                           </div>
                                           <div className="d-flex gap-1">
-                                            {smtp.isDefault && (
-                                              <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Default</span>
+                                            {smtp.isDefault && getSmtpAssignedFormIds(smtp).length === 0 && (
+                                              <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                                                Other forms
+                                              </span>
                                             )}
                                             <button 
                                               onClick={(e) => {
@@ -1291,8 +1359,33 @@ export default function Home() {
                                         <div className="small text-secondary mb-1">
                                           <LucideIcon name="mail" className="icon-xs me-1" /> {smtp.fromEmail}
                                         </div>
-                                        <div className="small text-muted font-monospace">
+                                        <div className="small text-muted font-monospace mb-1">
                                           {smtp.host}:{smtp.port} ({smtp.encryption})
+                                        </div>
+                                        <div className="small text-secondary">
+                                          {getSmtpAssignedFormIds(smtp).length > 0 ? (
+                                            <>
+                                              <span className="fw-semibold">Forms: </span>
+                                              {(smtp.assignedFormIds || [])
+                                                .map((item) =>
+                                                  typeof item === "object" && item?.name
+                                                    ? item.name
+                                                    : smtpAssignableForms.find(
+                                                        (f) =>
+                                                          f.id ===
+                                                          (typeof item === "object"
+                                                            ? String(item._id)
+                                                            : String(item))
+                                                      )?.name
+                                                )
+                                                .filter(Boolean)
+                                                .join(", ") || `${getSmtpAssignedFormIds(smtp).length} assigned`}
+                                            </>
+                                          ) : smtp.isDefault ? (
+                                            <span className="text-muted">All forms not assigned elsewhere</span>
+                                          ) : (
+                                            <span className="text-muted">No forms assigned</span>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
@@ -1496,7 +1589,7 @@ export default function Home() {
 
       {showSMTPModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div className="modal-content border-0 shadow-lg" style={{ borderRadius: "12px", overflow: "hidden" }}>
               <div className="modal-header border-0 pb-0 pt-3 px-4 d-flex justify-content-between align-items-start">
                 <div>
@@ -1504,7 +1597,9 @@ export default function Home() {
                     {editingSmtpId ? "Edit SMTP Configuration" : "Add SMTP Configuration"}
                   </h6>
                   <p className="text-secondary mb-0" style={{ fontSize: "0.75rem" }}>
-                    {editingSmtpId ? "Update your SMTP settings" : "One SMTP account per workspace (e.g. HR email)"}
+                    {editingSmtpId
+                      ? "Update SMTP settings and form assignments"
+                      : "Assign which forms send notification and autoresponder email through this account"}
                   </p>
                 </div>
                 <button
@@ -1594,6 +1689,55 @@ export default function Home() {
                       style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
                     />
                   </div>
+                </div>
+
+                <div className="mb-2">
+                  <label className="form-label fw-semibold small mb-1" style={{ color: "#334155" }}>
+                    Assign to forms
+                  </label>
+                  <p className="text-secondary mb-2" style={{ fontSize: "0.7rem" }}>
+                    Each form can only use one SMTP account. Selecting a form here removes it from any other account.
+                  </p>
+                  {smtpAssignableForms.length === 0 ? (
+                    <p className="text-muted small mb-0">No forms yet. Create a form first.</p>
+                  ) : (
+                    <div
+                      className="border rounded p-2"
+                      style={{ maxHeight: "140px", overflowY: "auto", backgroundColor: "#f8fafc" }}
+                    >
+                      {smtpAssignableForms.map((form) => {
+                        const checked = (smtpForm.assignedFormIds || []).includes(form.id);
+                        const onOtherSmtp =
+                          !checked &&
+                          smtpList.some(
+                            (smtp) =>
+                              String(smtp._id) !== String(editingSmtpId) &&
+                              getSmtpAssignedFormIds(smtp).includes(form.id)
+                          );
+                        return (
+                          <div key={form.id} className="form-check mb-1">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`smtp-form-${form.id}`}
+                              checked={checked}
+                              onChange={() => toggleSmtpFormAssignment(form.id)}
+                            />
+                            <label
+                              className="form-check-label small"
+                              htmlFor={`smtp-form-${form.id}`}
+                              style={{ color: "#334155" }}
+                            >
+                              {form.name}
+                              {onOtherSmtp && (
+                                <span className="text-muted ms-1">(moves from another SMTP)</span>
+                              )}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="alert d-flex flex-column gap-1 py-1 px-3 mb-0" style={{ backgroundColor: "#fffbeb", border: "1px solid #fde68a", color: "#b45309", borderRadius: "6px" }}>
