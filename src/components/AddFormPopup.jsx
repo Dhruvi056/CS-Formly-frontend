@@ -198,6 +198,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
   const [folders, setFolders] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [formLimitError, setFormLimitError] = useState("");
+  const [createError, setCreateError] = useState("");
   const { currentUser, userMeta } = useAuth();
   const navigate = useNavigate();
 
@@ -255,16 +256,27 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
     return () => document.removeEventListener("keydown", onEsc);
   }, [onClose]);
 
+  const clearCreateErrors = () => {
+    setFormLimitError("");
+    setCreateError("");
+  };
+
   const handleCreate = async () => {
     if (isCreating || !isFormValid) return;
     const token = localStorage.getItem("authToken");
     setIsCreating(true);
+    clearCreateErrors();
 
     try {
       const isFormPage = activeTab === "Form";
       const endpoint = isFormPage ? "/api/forms" : "/api/folders";
       const payload = isFormPage
-        ? { name: formName.trim(), folderId: selectedFolder, timezone, vendorId: userMeta?.vendorId || currentUser?.uid }
+        ? {
+            name: formName.trim(),
+            timezone,
+            vendorId: userMeta?.vendorId || currentUser?.uid,
+            ...(selectedFolder ? { folderId: selectedFolder } : { folderId: null }),
+          }
         : { name: folderName.trim(), vendorId: userMeta?.vendorId || currentUser?.uid };
 
       const res = await fetch(endpoint, {
@@ -284,14 +296,16 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
         onClose();
       } else {
         const errBody = await res.json().catch(() => ({}));
+        const message =
+          errBody.message || errBody.error || "Could not create. Please try again.";
         if (errBody.code === "FORM_LIMIT_REACHED") {
-          setFormLimitError(errBody.message || "You have reached your form limit. Please increase your package to add more.");
+          setFormLimitError(message);
         } else {
-          toast.error(errBody.message || "Could not create");
+          setCreateError(message);
         }
       }
     } catch (err) {
-      toast.error("An error occurred");
+      setCreateError("An error occurred. Please try again.");
     } finally {
       setIsCreating(false);
     }
@@ -329,15 +343,26 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
           </div>
 
           <div className="modal-body p-4 pt-3">
-            {formLimitError && (
-              <div className="alert alert-danger bg-danger-subtle text-danger d-flex align-items-center mb-3 p-3 rounded-3 border border-danger-subtle shadow-sm flex-wrap gap-2" style={{ fontSize: '13px', fontWeight: '500' }}>
-                <div className="d-flex align-items-center mb-1 w-100">
-                  <LucideIcon name="alert-circle" className="icon-sm me-2 flex-shrink-0" />
-                  <span>{formLimitError}</span>
+            {(formLimitError || createError) && (
+              <div
+                className="alert alert-danger bg-danger-subtle text-danger d-flex align-items-start mb-3 p-3 rounded-3 border border-danger-subtle shadow-sm flex-wrap gap-2"
+                style={{ fontSize: "13px", fontWeight: "500" }}
+                role="alert"
+              >
+                <div className="d-flex align-items-start w-100">
+                  <LucideIcon name="alert-circle" className="icon-sm me-2 flex-shrink-0 mt-1" />
+                  <span>{formLimitError || createError}</span>
                 </div>
-                <button className="btn btn-sm btn-danger py-1 px-3 mt-1" onClick={() => navigate('/pricing')} style={{ borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
-                  Upgrade Plan
-                </button>
+                {formLimitError && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger py-1 px-3 mt-1"
+                    onClick={() => navigate("/pricing")}
+                    style={{ borderRadius: "6px", fontSize: "12px", fontWeight: "600" }}
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
               </div>
             )}
             {/* Tabs */}
@@ -346,7 +371,10 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                 <button
                   key={tab}
                   className={`btn btn-sm w-50 border-0 ${activeTab === tab ? "bg-white shadow-sm fw-bold text-primary" : "text-muted"}`}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    clearCreateErrors();
+                  }}
                   style={{ borderRadius: '8px', height: '36px', fontSize: '13px' }}
                 >
                   {tab === "Form" ? "Form Endpoint" : "Folder"}
@@ -363,7 +391,10 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                     <select
                       className="form-select shadow-none"
                       value={selectedFolder}
-                      onChange={e => setSelectedFolder(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedFolder(e.target.value);
+                        clearCreateErrors();
+                      }}
                       style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
                     >
                       <option value="">None (Direct Form)</option>
@@ -384,7 +415,10 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                       className="form-control shadow-none"
                       placeholder="e.g. support-request"
                       value={formName}
-                      onChange={e => setFormName(e.target.value)}
+                      onChange={(e) => {
+                        setFormName(e.target.value);
+                        clearCreateErrors();
+                      }}
                       onKeyDown={(e) => {
                         if (e.key !== "Enter") return;
                         e.preventDefault();

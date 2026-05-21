@@ -192,7 +192,11 @@ function App() {
 
   return (
     <ToastProvider>
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        containerStyle={{ zIndex: 100100 }}
+        toastOptions={{ style: { zIndex: 100100 } }}
+      />
       <Router basename="/">
         <AuthProvider>
           <AppRoutes />
