@@ -8,6 +8,7 @@ import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import { Toaster } from "react-hot-toast";
+import { GoogleAuthProvider } from "./context/GoogleAuthContext";
 
 function PrivateRoute({ children }) {
   const { currentUser, loading } = useAuth();
@@ -191,18 +192,20 @@ function App() {
   }, []);
 
   return (
-    <ToastProvider>
-      <Toaster
-        position="top-right"
-        containerStyle={{ zIndex: 100100 }}
-        toastOptions={{ style: { zIndex: 100100 } }}
-      />
-      <Router basename="/">
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </Router>
-    </ToastProvider>
+    <GoogleAuthProvider>
+      <ToastProvider>
+        <Toaster
+          position="top-right"
+          containerStyle={{ zIndex: 100100 }}
+          toastOptions={{ style: { zIndex: 100100 } }}
+        />
+        <Router basename="/">
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
+    </GoogleAuthProvider>
   );
 }
 

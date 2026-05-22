@@ -9,6 +9,7 @@ import AdminUsersTable from "../components/AdminUsersTable.jsx";
 import AdminFormsTable from "../components/AdminFormsTable.jsx";
 import Pricing from "./Pricing.jsx";
 import SuperAdminDashboard from "../components/SuperAdminDashboard.jsx";
+import ProfileAvatar from "../components/ProfileAvatar";
 
 const LucideIcon = ({ name, className = "", style = {} }) => {
   useEffect(() => {
@@ -392,7 +393,7 @@ export default function Home() {
 
   const profileName = userMeta?.name || "User";
   const profileEmail = userMeta?.email || currentUser?.email || "";
-  const profileAvatarSrc = userMeta?.photoURL || currentUser?.photoURL || "";
+  const profileAvatarSrc = userMeta?.photoURL || "";
   const profilePlanLabel = String(userMeta?.subscriptionPlan || "free").toUpperCase();
   const planLower = String(userMeta?.subscriptionPlan || "free").toLowerCase();
   const upgradeNavLabel =
@@ -886,9 +887,7 @@ export default function Home() {
               </li>
               <li className="nav-item dropdown px-0" style={{ position: 'relative' }}>
                 <button className="nav-link p-0 d-flex align-items-center border-0 bg-transparent shadow-none" onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} type="button">
-                  <div className="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center border" style={{ width: '38px', height: '38px', overflow: 'hidden' }}>
-                    {profileAvatarSrc ? <img src={profileAvatarSrc} alt="profile" className="w-100 h-100 object-fit-cover" /> : <LucideIcon name="user" className="icon-sm text-primary" />}
-                  </div>
+                  <ProfileAvatar src={profileAvatarSrc} size={38} iconSize="icon-sm" />
                 </button>
                 {showProfileMenu && (
                   <>
@@ -911,9 +910,11 @@ export default function Home() {
                     >
                       <div className="p-4 border-bottom text-center bg-body-tertiary rounded-top">
                         <div className="mb-3 d-inline-block">
-                          <div className="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center border border-4 border-body shadow-sm mx-auto" style={{ width: '80px', height: '80px', overflow: 'hidden' }}>
-                            {profileAvatarSrc ? <img src={profileAvatarSrc} alt="profile" className="w-100 h-100 object-fit-cover" /> : <LucideIcon name="user" style={{ width: '40px', height: '40px' }} className="text-primary" />}
-                          </div>
+                          <ProfileAvatar
+                            src={profileAvatarSrc}
+                            size={80}
+                            wrapperClassName="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center border border-4 border-body shadow-sm mx-auto"
+                          />
                         </div>
                         <h6 className="fw-bold mb-1 text-body">{profileName}</h6>
                         <p className="small text-muted mb-0">{profileEmail}</p>

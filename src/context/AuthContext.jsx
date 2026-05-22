@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { resolveAvatarUrl } from "../utils/avatarUrl";
 
 /**
  * AuthContext provides authentication state and functions across the app.
@@ -111,6 +112,22 @@ export function AuthProvider({ children }) {
       return userData;
     } catch (error) {
       console.error("Login failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Authenticates a user with a Google ID token (from Google Identity Services).
+   * @param {string} credential - Google JWT credential.
+   */
+  async function loginWithGoogle(credential) {
+    try {
+      const userData = await callAuthApi("google", { credential });
+      storeSession(userData);
+      updateAuthState(userData);
+      return userData;
+    } catch (error) {
+      console.error("Google login failed:", error);
       throw error;
     }
   }
@@ -240,7 +257,7 @@ export function AuthProvider({ children }) {
       role: data.role,
       subscriptionPlan: data.subscriptionPlan || "free",
       vendorId: data.id || data.uid,
-      photoURL: data.photoURL || data.profileImage || "",
+      photoURL: resolveAvatarUrl(data.photoURL || data.profileImage || ""),
       coverURL: data.coverURL || data.coverImage || "",
       joined: data.joined || (data.createdAt ? new Date(data.createdAt).toLocaleDateString() : ""),
       createdAt: data.createdAt,
@@ -296,6 +313,7 @@ export function AuthProvider({ children }) {
     userMeta,
     signup,
     login,
+    loginWithGoogle,
     logout,
     resetPassword,
     updateUserMeta,

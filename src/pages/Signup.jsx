@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuthWithToast } from "../hooks/useAuthWithToast";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 export default function Signup() {
   const [firstName, setFirstName] = useState("");
@@ -13,7 +15,9 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { signup } = useAuthWithToast();
+  const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Helper component to render Lucide icons safely
@@ -109,6 +113,30 @@ export default function Signup() {
     }
   }
 
+  async function handleGoogleSuccess(credentialResponse) {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      setFormError("Google sign-up did not return a credential. Please try again.");
+      return;
+    }
+
+    try {
+      setGoogleLoading(true);
+      setFormError("");
+      await loginWithGoogle(credential);
+      toast.success("Account created successfully!", { position: "top-right" });
+      navigate("/", { replace: true });
+    } catch (err) {
+      setGoogleLoading(false);
+      const errorMessage = err.message || "Google sign-up failed. Please try again.";
+      if (errorMessage.toLowerCase().includes("exists") || errorMessage.toLowerCase().includes("linked")) {
+        setFormError(errorMessage);
+      } else {
+        setFormError(errorMessage);
+      }
+    }
+  }
+
   return (
     <div className="main-wrapper">
       <style>
@@ -136,6 +164,24 @@ export default function Signup() {
             opacity: 1;
             background-color: transparent !important;
           }
+          .auth-divider {
+            position: relative;
+            margin: 1.25rem 0 1.5rem;
+          }
+          .auth-divider hr {
+            margin: 0;
+            opacity: 0.2;
+          }
+          .auth-divider span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 0 0.75rem;
+            font-size: 13px;
+            color: #6c757d;
+          }
         `}
       </style>
       <div className="page-wrapper full-page">
@@ -157,6 +203,15 @@ export default function Signup() {
                       )}
 
                       <form className="forms-sample" onSubmit={handleSubmit} noValidate>
+                        <GoogleAuthButton
+                          mode="signup"
+                          onSuccess={handleGoogleSuccess}
+                          onError={() => {
+                            setGoogleLoading(false);
+                            setFormError("Google sign-up was cancelled or failed.");
+                          }}
+                        />
+
                         <div className="row">
                           <div className="col-md-6 mb-3">
                             <label className="form-label">First Name</label>
@@ -271,7 +326,7 @@ export default function Signup() {
                           <button
                             type="submit"
                             className="btn btn-primary d-block w-100 text-white py-2 mb-3 shadow-sm fw-bold"
-                            disabled={loading}
+                            disabled={loading || googleLoading}
                           >
                             {loading ? "Creating account..." : "Sign Up"}
                           </button>

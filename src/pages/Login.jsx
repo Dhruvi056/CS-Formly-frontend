@@ -3,6 +3,7 @@ import { useAuthWithToast } from "../hooks/useAuthWithToast";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import GoogleAuthButton from "../components/GoogleAuthButton";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,7 +11,8 @@ export default function Login() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login, resetPassword } = useAuthWithToast();
-  const { currentUser } = useAuth();
+  const { currentUser, loginWithGoogle } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [loginSuccess, setLoginSuccess] = useState(false);
@@ -38,6 +40,7 @@ export default function Login() {
   useEffect(() => {
     if (loginSuccess && currentUser) {
       setLoading(false);
+      setGoogleLoading(false);
       toast.success("Welcome back! Logged in successfully.");
       navigate("/", { replace: true });
       setLoginSuccess(false);
@@ -122,6 +125,26 @@ export default function Login() {
       } else {
         setFormError(errorMessage);
       }
+    }
+  }
+
+  async function handleGoogleSuccess(credentialResponse) {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      setFormError("Google sign-in did not return a credential. Please try again.");
+      return;
+    }
+
+    try {
+      setGoogleLoading(true);
+      setFormError("");
+      await loginWithGoogle(credential);
+      toast.success("Welcome back!", { position: "top-right" });
+      setLoginSuccess(true);
+    } catch (err) {
+      setLoginSuccess(false);
+      setGoogleLoading(false);
+      setFormError(err.message || "Google sign-in failed. Please try again.");
     }
   }
 
@@ -219,6 +242,24 @@ export default function Login() {
             opacity: 1;
             background-color: transparent !important;
           }
+          .auth-divider {
+            position: relative;
+            margin: 1.25rem 0 1.5rem;
+          }
+          .auth-divider hr {
+            margin: 0;
+            opacity: 0.2;
+          }
+          .auth-divider span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 0 0.75rem;
+            font-size: 13px;
+            color: #6c757d;
+          }
         `}
       </style>
       <div className="page-wrapper full-page">
@@ -240,6 +281,15 @@ export default function Login() {
                       )}
 
                       <form className="forms-sample" onSubmit={handleSubmit} noValidate>
+                        <GoogleAuthButton
+                          mode="signin"
+                          onSuccess={handleGoogleSuccess}
+                          onError={() => {
+                            setGoogleLoading(false);
+                            setFormError("Google sign-in was cancelled or failed.");
+                          }}
+                        />
+
                         <div className="mb-3">
                           <label className="form-label">Email address</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.email ? "border-danger" : ""}`}>
@@ -317,7 +367,7 @@ export default function Login() {
                           <button
                             type="submit"
                             className="btn btn-primary d-block w-100 text-white py-2 mb-3 shadow-sm fw-bold"
-                            disabled={loading}
+                            disabled={loading || googleLoading}
                           >
                             {loading ? "Logging in..." : "Login"}
                           </button>
