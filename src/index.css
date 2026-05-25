@@ -2,11 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Brand Colors */
-:root {
-  --primary-color: #6571ff;
-  --primary-hover: #505cf0;
-}
+/* Global brand colors (see brand.css for tokens) */
 
 .btn-primary,
 .bg-primary {
@@ -36,7 +32,7 @@
 }
 
 .bg-primary-subtle {
-  background-color: rgba(101, 113, 255, 0.1) !important;
+  background-color: rgba(var(--brand-primary-rgb), 0.1) !important;
 }
 
 /* Lucide icons: wrapper classes from components (icon-sm / icon-md) */

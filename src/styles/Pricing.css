@@ -3,8 +3,8 @@
   --pricing-muted: #6b7280;
   --pricing-border: #e5e7eb;
   --pricing-bg: #ffffff;
-  --pricing-primary: #6571ff; /* close to NobleUI demo */
-  --pricing-success: #6571ff; /* keep icons consistent when re-used */
+  --pricing-primary: #184BFB;
+  --pricing-success: #184BFB;
   --pricing-danger: #ef4444;
   --pricing-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
 }

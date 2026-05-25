@@ -63,7 +63,7 @@ function AppRoutes() {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
-        background: "#f4f5f7",
+        background: "#f3f2ec",
         color: "#666",
         fontSize: "16px",
       }}>

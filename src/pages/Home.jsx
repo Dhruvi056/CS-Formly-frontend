@@ -810,15 +810,15 @@ export default function Home() {
                     to="/pricing"
                     className="btn d-flex align-items-center"
                     style={{
-                      backgroundColor: "#6571ff",
+                      backgroundColor: "var(--brand-primary)",
                       color: "#fff",
-                      border: "1px solid #6571ff",
+                      border: "1px solid var(--brand-primary)",
                       borderRadius: "8px",
                       fontWeight: "600",
                       padding: "7px 14px",
                       fontSize: "12px",
                       whiteSpace: "nowrap",
-                      boxShadow: "0 2px 4px rgba(101, 113, 255, 0.15)",
+                      boxShadow: "0 2px 4px rgba(0, 79, 157, 0.2)",
                       display: "flex",
                       alignItems: "center"
                     }}
@@ -1084,7 +1084,7 @@ export default function Home() {
                               <button
                                 type="submit"
                                 className="btn text-white"
-                                style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
+                                style={{ backgroundColor: "var(--brand-primary)", border: "1px solid var(--brand-primary)", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
                               >
                                 Save Changes
                               </button>
@@ -1093,7 +1093,7 @@ export default function Home() {
                                 type="button"
                                 className="btn bg-transparent"
                                 onClick={() => setShowPasswordModal(true)}
-                                style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
+                                style={{ color: "var(--brand-primary)", border: "1px solid var(--brand-primary)", borderRadius: "6px", fontWeight: "500", padding: "0.35rem 1rem", fontSize: "0.85rem" }}
                               >
                                 Change Password
                               </button>
@@ -1202,9 +1202,9 @@ export default function Home() {
                                   to="/pricing"
                                   className="btn d-flex align-items-center"
                                   style={{
-                                    backgroundColor: "#6571ff",
+                                    backgroundColor: "var(--brand-primary)",
                                     color: "#fff",
-                                    border: "1px solid #6571ff",
+                                    border: "1px solid var(--brand-primary)",
                                     borderRadius: "6px",
                                     fontWeight: "500",
                                     padding: "5px 12px",
@@ -1307,7 +1307,7 @@ export default function Home() {
                               <button
                                 className="btn text-white"
                                 style={{
-                                  backgroundColor: "#6571ff",
+                                  backgroundColor: "var(--brand-primary)",
                                   borderRadius: "6px",
                                 }}
                                 onClick={openAddSmtpModal}
@@ -1425,14 +1425,7 @@ export default function Home() {
                   padding: "1.5rem",
                 }}
               >
-                <div
-                  style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "20px" }}>
-                  <span style={{ fontSize: "30px", fontWeight: "700", color: "rgb(0, 8, 101)" }} >CS</span>
-
-                  <span style={{ fontSize: "30px", fontWeight: "100", color: "#6571ff", marginLeft: "10px" }}>
-                    Formly
-                  </span>
-                </div>
+                <div className="brand-text brand-text--sm text-center mb-3">formbridge.ai</div>
 
                 <div className="d-flex flex-column gap-1">
                   <button
@@ -1570,7 +1563,7 @@ export default function Home() {
                   type="button"
                   className="btn bg-transparent"
                   onClick={() => setShowPasswordModal(false)}
-                  style={{ color: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.45rem 1.25rem" }}
+                  style={{ color: "var(--brand-primary)", border: "1px solid var(--brand-primary)", borderRadius: "6px", fontWeight: "500", padding: "0.45rem 1.25rem" }}
                 >
                   Cancel
                 </button>
@@ -1578,7 +1571,7 @@ export default function Home() {
                 <button
                   type="submit"
                   className="btn text-white"
-                  style={{ backgroundColor: "#6571ff", border: "1px solid #6571ff", borderRadius: "6px", fontWeight: "500", padding: "0.45rem 1.25rem" }}
+                  style={{ backgroundColor: "var(--brand-primary)", border: "1px solid var(--brand-primary)", borderRadius: "6px", fontWeight: "500", padding: "0.45rem 1.25rem" }}
                 >
                   Update Password
                 </button>
@@ -1684,7 +1677,7 @@ export default function Home() {
                     <input 
                       type="text" 
                       className="form-control shadow-none" 
-                      placeholder="Your Name (e.g. CS Formly)" 
+                      placeholder="Your Name (e.g. formbridge.ai)" 
                       value={smtpForm.fromName}
                       onChange={(e) => setSmtpForm({...smtpForm, fromName: e.target.value})}
                       style={{ border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }} 
@@ -1776,7 +1769,7 @@ export default function Home() {
                   className="btn text-white shadow-sm" 
                   onClick={handleSaveSmtp}
                   disabled={smtpSaving}
-                  style={{ backgroundColor: "#6366f1", border: "1px solid #6366f1", borderRadius: "6px", fontWeight: "500", padding: "0.4rem 1rem", fontSize: "0.85rem" }}
+                  style={{ backgroundColor: "var(--brand-primary)", border: "1px solid var(--brand-primary)", borderRadius: "6px", fontWeight: "500", padding: "0.4rem 1rem", fontSize: "0.85rem" }}
                 >
                   {smtpSaving ? "Saving..." : (editingSmtpId ? "Update Now" : "Save Now")}
                 </button>

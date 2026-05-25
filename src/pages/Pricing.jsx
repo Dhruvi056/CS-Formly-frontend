@@ -27,7 +27,7 @@ const PRO_EXTRA = [
   "Autoresponder",
   "5 Workspaces",
   "Custom Email Sender",
-  "Remove CS Formly branding",
+  "Remove formbridge.ai branding",
 ];
 
 const BUSINESS_FEATURES = [

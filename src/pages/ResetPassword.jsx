@@ -62,7 +62,7 @@ export default function ResetPassword() {
     <div className="reset-password-container">
       <div className="reset-card">
         <div className="brand-section">
-          <div className="brand-logo">CS <span>Formly</span></div>
+          <div className="brand-text brand-text--md">formbridge.ai</div>
         </div>
 
         <div className="header-section">

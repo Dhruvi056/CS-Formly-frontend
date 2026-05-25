@@ -170,13 +170,14 @@ function TimezonePicker({ value, onChange }) {
             setIsOpen((o) => !o);
           }
         }}
-        className="form-control shadow-none d-flex justify-content-between align-items-center bg-white gap-2"
+        className="form-control shadow-none d-flex justify-content-between align-items-center bg-white gap-2 afp-timezone-trigger"
         onClick={() => setIsOpen((o) => !o)}
         style={{
           height: "42px",
           borderRadius: "8px",
-          border: "1px solid #e1e8ed",
           fontSize: "13.5px",
+          border: "1px solid #0e1116",
+          color: "#0e1116",
           cursor: "pointer",
           minWidth: 0,
         }}
@@ -319,7 +320,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
     >
       <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: "400px", overflow: "visible" }}>
         <div
-          className="modal-content border-0 shadow-lg"
+          className="modal-content border-0 "
           style={{ borderRadius: "20px", overflow: "visible" }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -395,7 +396,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                         setSelectedFolder(e.target.value);
                         clearCreateErrors();
                       }}
-                      style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
+                      style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #0e1116', color: '#0e1116' }}
                     >
                       <option value="">None (Direct Form)</option>
                       {folders.map((f) => {
@@ -424,7 +425,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                         e.preventDefault();
                         handleCreate();
                       }}
-                      style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
+                      style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #0e1116', color: '#0e1116' }}
                     />
                   </div>
                   <div className="mb-2">
@@ -463,7 +464,7 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
                       e.preventDefault();
                       handleCreate();
                     }}
-                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #e1e8ed' }}
+                    style={{ height: '42px', borderRadius: '8px', fontSize: '13.5px', border: '1px solid #0e1116', color: '#0e1116' }}
                   />
                 </div>
               )}
@@ -492,9 +493,28 @@ export default function AddFormPopup({ onClose, onSelectForm, onCreated }) {
       <style>{`
         .afp-create-modal { overflow-y: auto; }
         .afp-create-modal .modal-content { overflow: visible; }
+        .afp-create-modal .form-control,
+        .afp-create-modal .form-select,
+        .afp-create-modal .afp-timezone-trigger {
+          border: 1px solid #0e1116 !important;
+          color: #0e1116;
+          font-family: var(--font-sans);
+          box-shadow: none !important;
+          outline: none;
+        }
+        .afp-create-modal .form-control:focus,
+        .afp-create-modal .form-control:focus-visible,
+        .afp-create-modal .form-select:focus,
+        .afp-create-modal .form-select:focus-visible,
+        .afp-create-modal .afp-timezone-trigger:focus,
+        .afp-create-modal .afp-timezone-trigger:focus-visible {
+          border-color: #0e1116 !important;
+          box-shadow: none !important;
+          outline: none;
+        }
         .cursor-pointer { cursor: pointer; }
         .dropdown-item-custom { transition: 0.2s; padding: 10px 16px; width: 100%; border: none; background: none; text-align: left; }
-        .dropdown-item-custom:hover { background: #f8f9fa; color: #6571ff; }
+        .dropdown-item-custom:hover { background: #f8f9fa; color: var(--brand-primary); }
         .tracking-wide { letter-spacing: 0.05em; }
         .fw-500 { font-weight: 500; }
       `}</style>
