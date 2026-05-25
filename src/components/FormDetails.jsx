@@ -173,7 +173,7 @@ function getEmailInitial(email) {
 // ── Helper: deterministic color from initial letter ───────────────────────────
 function getInitialColor(letter) {
   const colors = [
-    "#4F46E5", "#0891B2", "#059669", "#D97706",
+    "#184BFB", "#1339C9", "#059669", "#D97706",
     "#DC2626", "#7C3AED", "#DB2777", "#EA580C",
   ];
   return colors[(letter || "A").charCodeAt(0) % colors.length];
@@ -203,6 +203,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     enabled: false,
     body: "",
   });
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [autoresponderDraft, setAutoresponderDraft] = useState({
     enabled: false,
     subject: "",
@@ -211,8 +212,6 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
     attachmentName: "",
     attachmentRules: [],
   });
-  const [isHtmlMode, setIsHtmlMode] = useState(false);
-
   // Body scroll lock when email modal is open
   useEffect(() => {
     if (showEmailModal) {
@@ -1201,7 +1200,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                     <div className="d-flex gap-3 align-items-center">
                       <div
                         className="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
-                        style={{ width: 42, height: 42, background: "#4F46E5" }}
+                        style={{ width: 42, height: 42 }}
                       >
                         <LucideIcon
                           name="mail"
@@ -1209,7 +1208,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           style={{ width: 20, height: 20 }}
                         />
                       </div>
-                      <h5 className="modal-title fw-bold mb-0" style={{ fontSize: 18, color: "#111827" }}>
+                      <h5 className="modal-title fw-bold mb-0" style={{ fontSize: 18, color: "var(--brand-dark)" }}>
                         Email Settings
                       </h5>
                     </div>
@@ -1236,8 +1235,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         }}
                         style={{
                           background: "transparent",
-                          color: emailModalTab === "notifications" ? "#4F46E5" : "#6b7280",
-                          borderBottom: emailModalTab === "notifications" ? "2px solid #4F46E5" : "none",
+                          color: emailModalTab === "notifications" ? "var(--brand-primary)" : "#6b7280",
+                          borderBottom: emailModalTab === "notifications" ? "2px solid var(--brand-primary)" : "none",
                           borderRadius: 0
                         }}
                       >
@@ -1255,8 +1254,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           }}
                           style={{
                             background: "transparent",
-                            color: emailModalTab === "customTemplate" ? "#4F46E5" : "#6b7280",
-                            borderBottom: emailModalTab === "customTemplate" ? "2px solid #4F46E5" : "none",
+                            color: emailModalTab === "customTemplate" ? "var(--brand-primary)" : "#6b7280",
+                            borderBottom: emailModalTab === "customTemplate" ? "2px solid var(--brand-primary)" : "none",
                             borderRadius: 0
                           }}
                         >
@@ -1275,8 +1274,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           }}
                           style={{
                             background: "transparent",
-                            color: emailModalTab === "autoresponder" ? "#4F46E5" : "#6b7280",
-                            borderBottom: emailModalTab === "autoresponder" ? "2px solid #4F46E5" : "none",
+                            color: emailModalTab === "autoresponder" ? "var(--brand-primary)" : "#6b7280",
+                            borderBottom: emailModalTab === "autoresponder" ? "2px solid var(--brand-primary)" : "none",
                             borderRadius: 0
                           }}
                         >
@@ -1311,7 +1310,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                     <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: color }}>
                                       <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
                                     </div>
-                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
+                                    <span style={{ fontSize: 14, color: "var(--brand-dark)" }}>{e}</span>
                                   </div>
                                   <button
                                     type="button"
@@ -1343,15 +1342,15 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           <button
                             type="button"
                             className="btn btn-primary px-3 d-flex align-items-center justify-content-center"
-                            style={{ height: 36, background: "#4F46E5", border: "none", fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
+                            style={{ height: 36, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}
                             onClick={addEmail}
                           >
                             + Add
                           </button>
                         </div>
 
-                        <div className="alert alert-info py-2 px-3 mb-4 border-0 d-flex align-items-center gap-2" style={{ fontSize: 12, background: "#E0F2FE", color: "#0369A1", borderRadius: "8px" }}>
-                           <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#0369A1" }} />
+                        <div className="alert alert-info py-2 px-3 mb-4 border-0 d-flex align-items-center gap-2" style={{ fontSize: 12, borderRadius: "8px" }}>
+                           <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--brand-primary)" }} />
                            <span>Addresses listed here receive alerts on every new submission.</span>
                         </div>
                       </div>
@@ -1375,7 +1374,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                     <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 32, height: 32, background: "#64748b" }}>
                                       <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{initial}</span>
                                     </div>
-                                    <span style={{ fontSize: 14, color: "#111827" }}>{e}</span>
+                                    <span style={{ fontSize: 14, color: "var(--brand-dark)" }}>{e}</span>
                                   </div>
                                   <button
                                     type="button"
@@ -1427,14 +1426,13 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                             <span style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>{ownerInitial}</span>
                           </div>
                           <div className="d-flex flex-column">
-                            <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{ownerEmail || "—"}</span>
+                            <span style={{ fontSize: 15, fontWeight: 600, color: "var(--brand-dark)" }}>{ownerEmail || "—"}</span>
                             <span style={{ fontSize: 12, color: "#6b7280" }}>Owner</span>
                           </div>
                         </div>
                       </div>
                     </>
                   )}
-
 
                   {emailModalTab === "customTemplate" && userMeta?.subscriptionPlan === "business" && (
                     <>
@@ -1473,13 +1471,12 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                             height: 180px;
                             border-bottom-left-radius: 8px;
                             border-bottom-right-radius: 8px;
-                            font-family: 'Segoe UI', system-ui, sans-serif;
                             font-size: 13px;
                           }
                           .fd-quill-container .ql-toolbar {
                             border-top-left-radius: 8px;
                             border-top-right-radius: 8px;
-                            background: #f8fafc;
+                            background: var(--brand-cream);
                           }
                           .fd-quill-container .ql-editor.ql-blank::before {
                             font-style: normal;
@@ -1509,7 +1506,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         )}
                       </div>
 
-                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
+                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4" }}>
                         <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
                           <LucideIcon name="info" style={{ width: 14, height: 14 }} />
                           <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.03em" }}>Available Placeholders</span>
@@ -1533,11 +1530,8 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                           Tip: Use <code>{`{{FieldName}}`}</code> to insert a specific field value.
                         </div>
                       </div>
-
-
                     </>
                   )}
-
 
                   {emailModalTab === "autoresponder" && (userMeta?.subscriptionPlan === "business" || userMeta?.subscriptionPlan === "pro") && (
                     <>
@@ -1607,7 +1601,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                         />
                       </div>
 
-                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4", border: "none", background: "#f0f9ff" }}>
+                      <div className="alert alert-info py-2 px-3 mb-0 mt-2" style={{ fontSize: 11, lineHeight: "1.4" }}>
                         <div className="d-flex align-items-center gap-1 fw-bold mb-2 text-primary">
                           <LucideIcon name="info" style={{ width: 14, height: 14 }} />
                           <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.03em" }}>Available Placeholders</span>
@@ -1811,7 +1805,7 @@ export default function FormDetails({ form, onFormUpdated, searchQuery = "" }) {
                                       placeholder="Custom message body..."
                                       readOnly={!autoresponderDraft.enabled}
                                     />
-                                    <div className="mt-2 py-1 px-2 rounded" style={{ fontSize: 10, background: "#f0f9ff", border: "1px solid #e0f2fe" }}>
+                                    <div className="mt-2 py-1 px-2 rounded alert-info" style={{ fontSize: 10, border: "1px solid rgba(24, 75, 251, 0.2)" }}>
                                       <div className="d-flex align-items-center gap-1 fw-bold mb-1 text-primary">
                                         <LucideIcon name="info" style={{ width: 10, height: 10 }} />
                                         <span style={{ fontSize: 9, textTransform: "uppercase" }}>Placeholders</span>

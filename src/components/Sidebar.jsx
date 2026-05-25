@@ -263,7 +263,7 @@ export default function Sidebar({
           style={{ cursor: "pointer" }}
           aria-label="Go to Home"
         >
-          CS <span>Formly</span>
+          <span className="brand-text brand-text--sm">formbridge.ai</span>
         </button>
         <div className="sidebar-toggler d-none d-md-flex" style={{ color: '#7987a1' }} onClick={() => document.body.classList.toggle('sidebar-folded')}>
           <LucideIcon name="menu" className="icon-md" />
@@ -407,7 +407,7 @@ export default function Sidebar({
             const pct = Math.min(100, Math.round((used / max) * 100));
             const isAtLimit = used >= max;
             const isNearLimit = pct >= 80;
-            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : 'var(--brand-primary)';
             return (
               <li className="nav-item px-auto mt-1 mb-2">
                 <div className="p-3 bg-white border d-flex flex-column gap-2 rounded-3" style={{ borderColor: isAtLimit ? '#fca5a5' : '#e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -457,7 +457,7 @@ export default function Sidebar({
             const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
             const isAtLimit = max > 0 && used >= max;
             const isNearLimit = pct >= 80 && !isAtLimit;
-            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : 'var(--brand-primary)';
 
             return (
               <li className="nav-item px-auto mt-1 mb-2">
@@ -507,7 +507,7 @@ export default function Sidebar({
             const unlimitedPct = used > 0 ? 2 : 0;
             const isAtLimit = !isUnlimited && max > 0 && used >= max;
             const isNearLimit = !isUnlimited && pct >= 80 && !isAtLimit;
-            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : 'var(--brand-primary)';
 
             return (
               <li className="nav-item px-auto mt-1 mb-2">
@@ -565,7 +565,7 @@ export default function Sidebar({
             const unlimitedPct = used > 0 ? 2 : 0;
             const isAtLimit = !isUnlimited && max > 0 && used >= max;
             const isNearLimit = !isUnlimited && pct >= 80 && !isAtLimit;
-            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : '#6571ff';
+            const barColor = isAtLimit ? '#ef4444' : isNearLimit ? '#f97316' : 'var(--brand-primary)';
 
             return (
               <li className="nav-item px-auto mt-1 mb-2">

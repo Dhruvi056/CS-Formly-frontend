@@ -1,0 +1,87 @@
+/* Synced with public/assets/css/formbridge-brand.css — loaded via React bundle */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap");
+
+:root,
+[data-bs-theme="light"] {
+  --brand-primary: #184BFB;
+  --brand-primary-hover: #1339C9;
+  --brand-dark: #0e1116;
+  --brand-cream: #f3f2ec;
+  --brand-primary-rgb: 24, 75, 251;
+  --brand-info-bg: rgba(24, 75, 251, 0.1);
+  --font-sans: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --primary-color: var(--brand-primary);
+  --primary-hover: var(--brand-primary-hover);
+  --nobleui-primary: var(--brand-primary);
+  --bs-primary: #184BFB !important;
+  --bs-primary-rgb: 24, 75, 251 !important;
+  --bs-link-color: #184BFB !important;
+  --bs-link-hover-color: #1339C9 !important;
+  --bs-dark: #0e1116 !important;
+  --bs-body-font-family: var(--font-sans) !important;
+  --bs-body-bg: #f3f2ec !important;
+  --bs-body-color: #0e1116 !important;
+  --bs-border-color: rgba(14, 17, 22, 0.12) !important;
+}
+
+html,
+body,
+#root {
+  font-family: var(--font-sans);
+  color: var(--brand-dark);
+}
+
+body {
+  background-color: var(--brand-cream) !important;
+}
+
+.brand-text:not(.brand-text--display):not(.brand-text--lg) {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--brand-dark) !important;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.brand-text--sm { font-size: 1.125rem; }
+.brand-text--md { font-size: 1.5rem; }
+
+.brand-text--display,
+.brand-text--lg {
+  font-family: var(--font-serif) !important;
+  font-weight: 400 !important;
+  font-size: clamp(2.125rem, 5vw, 2.875rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--brand-dark) !important;
+}
+
+.sidebar .sidebar-header .sidebar-brand {
+  color: var(--brand-dark) !important;
+}
+
+.main-wrapper .page-wrapper {
+  background-color: var(--brand-cream);
+}
+
+.auth-page .page-content {
+  background-color: var(--brand-cream);
+}
+
+.auth-page .card {
+  background: #fff;
+  border-color: rgba(14, 17, 22, 0.08) !important;
+}
+
+.alert-info {
+  background-color: var(--brand-info-bg) !important;
+  color: #184BFB !important;
+  border: none !important;
+}
+
+.fd-quill-container .ql-container,
+.fd-quill-container .ql-toolbar,
+.fd-quill-container .ql-editor {
+  font-family: var(--font-sans) !important;
+}

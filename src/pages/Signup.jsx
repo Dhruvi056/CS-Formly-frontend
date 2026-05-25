@@ -192,7 +192,7 @@ export default function Signup() {
                 <div className="row">
                   <div className="col-md-12 ps-md-0">
                     <div className="auth-form-wrapper px-4 py-5">
-                      <div className="nobleui-logo d-block mb-2 text-center">CS <span>Formly</span></div>
+                      <div className="brand-text brand-text--md d-block mb-2 text-center">formbridge.ai</div>
                       <h5 className="text-secondary fw-normal mb-4 text-center">Create a free account.</h5>
 
                       {formError && (
