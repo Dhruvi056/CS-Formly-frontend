@@ -1,87 +1,460 @@
 /* Synced with public/assets/css/formbridge-brand.css — loaded via React bundle */
+
 @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap");
 
+
+
 :root,
+
 [data-bs-theme="light"] {
-  --brand-primary: #184BFB;
-  --brand-primary-hover: #1339C9;
+
+  --brand-primary: #1b56ff;
+
+  --brand-primary-hover: #1545cc;
+
   --brand-dark: #0e1116;
+
   --brand-cream: #f3f2ec;
-  --brand-primary-rgb: 24, 75, 251;
-  --brand-info-bg: rgba(24, 75, 251, 0.1);
+
+  --brand-primary-rgb: 27, 86, 255;
+
+  --brand-info-bg: rgba(27, 86, 255, 0.1);
+
   --font-sans: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+
   --primary-color: var(--brand-primary);
+
   --primary-hover: var(--brand-primary-hover);
+
   --nobleui-primary: var(--brand-primary);
-  --bs-primary: #184BFB !important;
-  --bs-primary-rgb: 24, 75, 251 !important;
-  --bs-link-color: #184BFB !important;
-  --bs-link-hover-color: #1339C9 !important;
+
+  --bs-primary: #1b56ff !important;
+
+  --bs-primary-rgb: 27, 86, 255 !important;
+
+  --bs-link-color: #1b56ff !important;
+
+  --bs-link-hover-color: #1545cc !important;
+
   --bs-dark: #0e1116 !important;
+
   --bs-body-font-family: var(--font-sans) !important;
+
   --bs-body-bg: #f3f2ec !important;
+
   --bs-body-color: #0e1116 !important;
+
   --bs-border-color: rgba(14, 17, 22, 0.12) !important;
+
 }
+
+
 
 html,
+
 body,
+
 #root {
+
   font-family: var(--font-sans);
+
   color: var(--brand-dark);
+
 }
+
+
 
 body {
+
   background-color: var(--brand-cream) !important;
+
 }
 
-.brand-text:not(.brand-text--display):not(.brand-text--lg) {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  color: var(--brand-dark) !important;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+
+
+img[alt="formbridge"] {
+
+  display: block;
+
+  max-width: 170px;
+
+  width: 100%;
+
+  height: auto;
+
 }
 
-.brand-text--sm { font-size: 1.125rem; }
-.brand-text--md { font-size: 1.5rem; }
 
-.brand-text--display,
-.brand-text--lg {
-  font-family: var(--font-serif) !important;
-  font-weight: 400 !important;
-  font-size: clamp(2.125rem, 5vw, 2.875rem);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  color: var(--brand-dark) !important;
+
+.sidebar .sidebar-header img[alt="formbridge"] {
+
+  max-width: 130px;
+
 }
 
-.sidebar .sidebar-header .sidebar-brand {
-  color: var(--brand-dark) !important;
-}
+
 
 .main-wrapper .page-wrapper {
+
   background-color: var(--brand-cream);
+
 }
+
+
 
 .auth-page .page-content {
+
   background-color: var(--brand-cream);
+
 }
+
+
 
 .auth-page .card {
+
   background: #fff;
+
   border-color: rgba(14, 17, 22, 0.08) !important;
+
 }
+
+
+
+.auth-page .forms-sample {
+
+  border: none !important;
+
+}
+
+
+
+.auth-page .card .row > [class*="col"] {
+
+  border: none !important;
+
+}
+
+
+
+.auth-page .auth-divider hr {
+
+  display: none;
+
+}
+
+
+
+.auth-page .auth-divider span {
+
+  position: static;
+
+  transform: none;
+
+  background: transparent;
+
+  padding: 0;
+
+}
+
+
+
+/* Login & Sign up — symmetric card padding & standard field rhythm */
+
+.auth-page.login-page .login-card-body,
+
+.auth-page.signup-page .login-card-body {
+
+  padding: 2rem;
+
+}
+
+
+
+@media (max-width: 575.98px) {
+
+  .auth-page.login-page .login-card-body,
+
+.auth-page.signup-page .login-card-body {
+
+    padding: 1.5rem 1.25rem;
+
+  }
+
+}
+
+
+
+.auth-page.login-page .login-card-header,
+
+.auth-page.signup-page .login-card-header {
+
+  margin-bottom: 0.75rem;
+
+}
+
+
+
+.auth-page.login-page .login-subtitle,
+
+.auth-page.signup-page .login-subtitle {
+
+  margin-bottom: 1.25rem;
+
+  line-height: 1.45;
+
+}
+
+
+
+.auth-page.login-page .login-field,
+
+.auth-page.signup-page .login-field {
+
+  margin-bottom: 0.875rem;
+
+}
+
+
+
+.auth-page.signup-page .signup-name-row {
+
+  --bs-gutter-x: 0.75rem;
+
+  margin-bottom: 0;
+
+}
+
+
+
+.auth-page.login-page .login-options {
+
+  margin-bottom: 0.875rem;
+
+}
+
+
+
+.auth-page.login-page .login-submit,
+
+.auth-page.signup-page .login-submit {
+
+  padding-top: 0.25rem;
+
+}
+
+
+
+.auth-page.login-page .login-footer,
+
+.auth-page.signup-page .login-footer {
+
+  margin-top: 0.75rem;
+
+  margin-bottom: 0;
+
+}
+
+
+
+.auth-page.login-page .form-label,
+
+.auth-page.signup-page .form-label {
+
+  margin-bottom: 0.375rem;
+
+  font-size: 0.875rem;
+
+  font-weight: 600;
+
+}
+
+
+
+.auth-page.login-page .auth-form-input:focus,
+
+.auth-page.signup-page .auth-form-input:focus {
+
+  outline: none;
+
+  box-shadow: none;
+
+}
+
+
+
+.auth-page.login-page .custom-auth-group,
+
+.auth-page.signup-page .custom-auth-group {
+
+  border: 1px solid #dee2e6;
+
+  border-radius: 4px;
+
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+  background-color: #fff;
+
+}
+
+
+
+.auth-page.login-page .custom-auth-group:focus-within,
+
+.auth-page.signup-page .custom-auth-group:focus-within {
+
+  border-color: #e9ecef !important;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+
+}
+
+
+
+.auth-page.login-page .custom-auth-group .form-control,
+
+.auth-page.signup-page .custom-auth-group .form-control {
+
+  padding: 0.5rem 0.75rem;
+
+}
+
+
+
+.auth-page.login-page .eye-icon-btn,
+
+.auth-page.signup-page .eye-icon-btn {
+
+  box-shadow: none !important;
+
+  opacity: 0.6;
+
+  transition: opacity 0.2s;
+
+}
+
+
+
+.auth-page.login-page .eye-icon-btn:hover,
+
+.auth-page.signup-page .eye-icon-btn:hover {
+
+  opacity: 1;
+
+  background-color: transparent !important;
+
+}
+
+
+
+.auth-page.login-page .auth-divider,
+
+.auth-page.signup-page .auth-divider {
+
+  position: relative;
+
+  margin: 1rem 0;
+
+  text-align: center;
+
+}
+
+
+
+.auth-page.login-page .auth-divider hr,
+
+.auth-page.signup-page .auth-divider hr {
+
+  display: block !important;
+
+  margin: 0;
+
+  border: 0;
+
+  border-top: 1px solid rgba(14, 17, 22, 0.12);
+
+}
+
+
+
+.auth-page.login-page .auth-divider span,
+
+.auth-page.signup-page .auth-divider span {
+
+  position: absolute;
+
+  top: 50%;
+
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  background: #fff;
+
+  padding: 0 0.75rem;
+
+  font-size: 0.8125rem;
+
+  color: #6c757d;
+
+}
+
+
+
+.login-reset-modal .modal-header {
+
+  padding: 1rem 1.25rem 0;
+
+}
+
+
+
+.login-reset-modal .modal-body {
+
+  padding: 0 1.75rem 1.75rem;
+
+  text-align: center;
+
+}
+
+
+
+.login-reset-modal .login-reset-icon {
+
+  margin-bottom: 1rem;
+
+}
+
+
+
+.login-reset-modal .login-reset-desc {
+
+  margin-bottom: 1.25rem;
+
+}
+
+
 
 .alert-info {
+
   background-color: var(--brand-info-bg) !important;
-  color: #184BFB !important;
+
+  color: #1b56ff !important;
+
   border: none !important;
+
 }
 
+
+
 .fd-quill-container .ql-container,
+
 .fd-quill-container .ql-toolbar,
+
 .fd-quill-container .ql-editor {
+
   font-family: var(--font-sans) !important;
+
 }
+

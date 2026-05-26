@@ -139,61 +139,19 @@ export default function Signup() {
 
   return (
     <div className="main-wrapper">
-      <style>
-        {`
-          .auth-form-input:focus {
-            outline: none;
-            box-shadow: none;
-          }
-          .custom-auth-group {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            transition: all 0.2s ease-in-out;
-            background-color: #fff;
-          }
-          .custom-auth-group:focus-within {
-             border-color: #e9ecef !important;
-             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-          }
-          .eye-icon-btn {
-            box-shadow: none !important;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-          }
-          .eye-icon-btn:hover {
-            opacity: 1;
-            background-color: transparent !important;
-          }
-          .auth-divider {
-            position: relative;
-            margin: 1.25rem 0 1.5rem;
-          }
-          .auth-divider hr {
-            margin: 0;
-            opacity: 0.2;
-          }
-          .auth-divider span {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #fff;
-            padding: 0 0.75rem;
-            font-size: 13px;
-            color: #6c757d;
-          }
-        `}
-      </style>
       <div className="page-wrapper full-page">
-        <div className="page-content container-xxl d-flex align-items-center justify-content-center">
-          <div className="row w-100 mx-0 auth-page">
-            <div className="col-md-6 col-lg-4 col-xl-5 mx-auto">
+        <div className="page-content container-xxl d-flex align-items-center justify-content-center px-3">
+          <div className="row w-100 mx-0 auth-page signup-page">
+            <div className="col-11 col-sm-10 col-md-8 col-lg-6 col-xl-5 mx-auto">
               <div className="card shadow-sm border-0 overflow-hidden">
-                <div className="row">
-                  <div className="col-md-12 ps-md-0">
-                    <div className="auth-form-wrapper px-4 py-5">
-                      <div className="brand-text brand-text--md d-block mb-2 text-center">formbridge.ai</div>
-                      <h5 className="text-secondary fw-normal mb-4 text-center">Create a free account.</h5>
+                <div className="card-body login-card-body">
+                      <div className="login-card-header d-flex justify-content-center">
+                        <img
+                          src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+                          alt="formbridge"
+                        />
+                      </div>
+                      <h5 className="login-subtitle text-secondary fw-normal text-center">Create a free account.</h5>
 
                       {formError && (
                         <div className="alert alert-danger py-2 d-flex align-items-center" role="alert">
@@ -202,18 +160,18 @@ export default function Signup() {
                         </div>
                       )}
 
-                      <form className="forms-sample" onSubmit={handleSubmit} noValidate>
-                        <GoogleAuthButton
-                          mode="signup"
-                          onSuccess={handleGoogleSuccess}
-                          onError={() => {
-                            setGoogleLoading(false);
-                            setFormError("Google sign-up was cancelled or failed.");
-                          }}
-                        />
+                      <GoogleAuthButton
+                        mode="signup"
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => {
+                          setGoogleLoading(false);
+                          setFormError("Google sign-up was cancelled or failed.");
+                        }}
+                      />
 
-                        <div className="row">
-                          <div className="col-md-6 mb-3">
+                      <form className="forms-sample" onSubmit={handleSubmit} noValidate>
+                        <div className="row signup-name-row g-2">
+                          <div className="col-md-6 login-field">
                             <label className="form-label">First Name</label>
                             <div className={`input-group custom-auth-group ${fieldErrors.firstName ? "border-danger" : ""}`}>
                               <input
@@ -246,7 +204,7 @@ export default function Signup() {
                             {fieldErrors.lastName && <div className="invalid-feedback d-block">{fieldErrors.lastName}</div>}
                           </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="login-field">
                           <label className="form-label">Email address</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.email ? "border-danger" : ""}`}>
                             <input
@@ -262,7 +220,7 @@ export default function Signup() {
                           </div>
                           {fieldErrors.email && <div className="invalid-feedback d-block">{fieldErrors.email}</div>}
                         </div>
-                        <div className="mb-3">
+                        <div className="login-field">
                           <label className="form-label">Password</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.password ? "border-danger" : ""}`}>
                             <input
@@ -291,7 +249,7 @@ export default function Signup() {
                           </div>
                           {fieldErrors.password && <div className="invalid-feedback d-block">{fieldErrors.password}</div>}
                         </div>
-                        <div className="mb-3">
+                        <div className="login-field">
                           <label className="form-label">Confirm Password</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.confirmPassword ? "border-danger" : ""}`}>
                             <input
@@ -322,21 +280,19 @@ export default function Signup() {
                             <div className="invalid-feedback d-block">{fieldErrors.confirmPassword}</div>
                           )}
                         </div>
-                        <div className="text-center pt-2">
+                        <div className="login-submit text-center">
                           <button
                             type="submit"
-                            className="btn btn-primary d-block w-100 text-white py-2 mb-3 shadow-sm fw-bold"
+                            className="btn btn-primary d-block w-100 text-white py-2 mb-2 shadow-sm fw-bold"
                             disabled={loading || googleLoading}
                           >
                             {loading ? "Creating account..." : "Sign Up"}
                           </button>
                         </div>
-                        <p className="mt-3 text-secondary text-center fs-14px">
+                        <p className="login-footer text-secondary text-center fs-14px">
                           Already have an account? <Link to="/login" className="text-primary fw-bold text-decoration-none ms-1">Log in</Link>
                         </p>
                       </form>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

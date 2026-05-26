@@ -109,6 +109,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/forms/:formId/email-settings"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/forms/:formId"
           element={
             <PrivateRoute>

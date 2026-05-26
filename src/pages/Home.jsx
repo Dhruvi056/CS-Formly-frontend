@@ -1425,7 +1425,12 @@ export default function Home() {
                   padding: "1.5rem",
                 }}
               >
-                <div className="brand-text brand-text--sm text-center mb-3">formbridge.ai</div>
+                <div className="d-flex justify-content-center mb-3">
+                  <img
+                    src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+                    alt="formbridge"
+                  />
+                </div>
 
                 <div className="d-flex flex-column gap-1">
                   <button

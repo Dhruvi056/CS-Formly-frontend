@@ -1,0 +1,11 @@
+.email-editor-wrapper {
+  min-height: 420px;
+  width: 100%;
+}
+
+.email-editor-wrapper iframe {
+  display: block;
+  min-height: 420px !important;
+  width: 100% !important;
+  border: none;
+}
