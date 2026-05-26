@@ -263,7 +263,10 @@ export default function Sidebar({
           style={{ cursor: "pointer" }}
           aria-label="Go to Home"
         >
-          <span className="brand-text brand-text--sm">formbridge.ai</span>
+          <img
+            src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+            alt="formbridge"
+          />
         </button>
         <div className="sidebar-toggler d-none d-md-flex" style={{ color: '#7987a1' }} onClick={() => document.body.classList.toggle('sidebar-folded')}>
           <LucideIcon name="menu" className="icon-md" />

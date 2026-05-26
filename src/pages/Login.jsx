@@ -217,61 +217,19 @@ export default function Login() {
 
   return (
     <div className="main-wrapper">
-      <style>
-        {`
-          .auth-form-input:focus {
-            outline: none;
-            box-shadow: none;
-          }
-          .custom-auth-group {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            transition: all 0.2s ease-in-out;
-            background-color: #fff;
-          }
-          .custom-auth-group:focus-within {
-             border-color: #e9ecef !important;
-             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-          }
-          .eye-icon-btn {
-            box-shadow: none !important;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-          }
-          .eye-icon-btn:hover {
-            opacity: 1;
-            background-color: transparent !important;
-          }
-          .auth-divider {
-            position: relative;
-            margin: 1.25rem 0 1.5rem;
-          }
-          .auth-divider hr {
-            margin: 0;
-            opacity: 0.2;
-          }
-          .auth-divider span {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #fff;
-            padding: 0 0.75rem;
-            font-size: 13px;
-            color: #6c757d;
-          }
-        `}
-      </style>
       <div className="page-wrapper full-page">
-        <div className="page-content container-xxl d-flex align-items-center justify-content-center">
-          <div className="row w-100 mx-0 auth-page">
-            <div className="col-md-8 col-lg-6 col-xl-4 mx-auto">
+        <div className="page-content container-xxl d-flex align-items-center justify-content-center px-3">
+          <div className="row w-100 mx-0 auth-page login-page">
+            <div className="col-11 col-sm-10 col-md-8 col-lg-6 col-xl-4 mx-auto">
               <div className="card shadow-sm border-0 overflow-hidden">
-                <div className="row">
-                  <div className="col-md-12 ps-md-0">
-                    <div className="auth-form-wrapper px-4 py-5">
-                      <div className="brand-text brand-text--md d-block mb-2 text-center">formbridge.ai</div>
-                      <h5 className="text-secondary fw-normal mb-4 text-center">Welcome back! Log in to your account.</h5>
+                <div className="card-body login-card-body">
+                      <div className="login-card-header d-flex justify-content-center">
+                        <img
+                          src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+                          alt="formbridge"
+                        />
+                      </div>
+                      <h5 className="login-subtitle text-secondary fw-normal text-center">Welcome back! Log in to your account.</h5>
 
                       {formError && (
                         <div className="alert alert-danger py-2 d-flex align-items-center" role="alert">
@@ -280,17 +238,17 @@ export default function Login() {
                         </div>
                       )}
 
-                      <form className="forms-sample" onSubmit={handleSubmit} noValidate>
-                        <GoogleAuthButton
-                          mode="signin"
-                          onSuccess={handleGoogleSuccess}
-                          onError={() => {
-                            setGoogleLoading(false);
-                            setFormError("Google sign-in was cancelled or failed.");
-                          }}
-                        />
+                      <GoogleAuthButton
+                        mode="signin"
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => {
+                          setGoogleLoading(false);
+                          setFormError("Google sign-in was cancelled or failed.");
+                        }}
+                      />
 
-                        <div className="mb-3">
+                      <form className="forms-sample" onSubmit={handleSubmit} noValidate>
+                        <div className="login-field">
                           <label className="form-label">Email address</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.email ? "border-danger" : ""}`}>
                             <input
@@ -306,7 +264,7 @@ export default function Login() {
                           </div>
                           {fieldErrors.email && <div className="invalid-feedback d-block">{fieldErrors.email}</div>}
                         </div>
-                        <div className="mb-3">
+                        <div className="login-field">
                           <label className="form-label">Password</label>
                           <div className={`input-group custom-auth-group ${fieldErrors.password ? "border-danger" : ""}`}>
                             <input
@@ -339,7 +297,7 @@ export default function Login() {
                           </div>
                           {fieldErrors.password && <div className="invalid-feedback d-block">{fieldErrors.password}</div>}
                         </div>
-                        <div className="mb-3 d-flex justify-content-between align-items-center">
+                        <div className="login-options d-flex justify-content-between align-items-center">
                           <div className="form-check">
                             <input
                               type="checkbox"
@@ -363,21 +321,19 @@ export default function Login() {
                             Forgot password?
                           </button>
                         </div>
-                        <div className="text-center pt-2">
+                        <div className="login-submit text-center">
                           <button
                             type="submit"
-                            className="btn btn-primary d-block w-100 text-white py-2 mb-3 shadow-sm fw-bold"
+                            className="btn btn-primary d-block w-100 text-white py-2 mb-2 shadow-sm fw-bold"
                             disabled={loading || googleLoading}
                           >
                             {loading ? "Logging in..." : "Login"}
                           </button>
                         </div>
-                        <p className="mt-3 text-secondary text-center fs-14px">
+                        <p className="login-footer text-secondary text-center fs-14px">
                           Don't have an account? <Link to="/signup" className="text-primary fw-bold text-decoration-none ms-1">Sign up</Link>
                         </p>
                       </form>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -390,7 +346,7 @@ export default function Login() {
       {showForgotPassword && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg">
+            <div className="modal-content login-reset-modal border-0 shadow-lg">
               <div className="modal-header border-0 pb-0">
                 <button
                   type="button"
@@ -405,12 +361,12 @@ export default function Login() {
                   }}
                 ></button>
               </div>
-              <div className="modal-body p-4 text-center">
-                <div className="mb-4 d-inline-block p-3 bg-primary-subtle rounded-circle">
+              <div className="modal-body">
+                <div className="login-reset-icon d-inline-block p-3 bg-primary-subtle rounded-circle">
                   <i className="text-primary fs-1" data-lucide="unlock"></i>
                 </div>
                 <h4 className="fw-bold mb-2">Reset Password</h4>
-                <p className="text-secondary mb-4">Enter your email and we'll send you a link to reset your password</p>
+                <p className="login-reset-desc text-secondary">Enter your email and we'll send you a link to reset your password</p>
 
                 {resetSuccess && (
                   <div className="alert alert-success text-start" role="alert">
@@ -421,8 +377,8 @@ export default function Login() {
 
                 {!resetSuccess && (
                   <form onSubmit={handleForgotPassword}>
-                    <div className="mb-3 text-start">
-                      <label className="form-label fw-semibold">Email Address</label>
+                    <div className="mb-2 text-start">
+                      <label className="form-label fw-semibold mb-1">Email Address</label>
                       <input
                         type="email"
                         required
@@ -438,7 +394,7 @@ export default function Login() {
                     </div>
                     <button
                       type="submit"
-                      className="btn btn-primary w-100 py-2 mb-3 shadow-sm"
+                      className="btn btn-primary w-100 py-2 mb-2 shadow-sm"
                       disabled={resetLoading || (resetAttempts >= RESET_ATTEMPT_LIMIT && Date.now() - lastResetAttempt < RESET_COOLDOWN_TIME)}
                     >
                       {resetLoading ? "Sending Reset Link..." : "Send Reset Link"}

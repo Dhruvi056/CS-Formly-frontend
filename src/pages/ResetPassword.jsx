@@ -62,14 +62,14 @@ export default function ResetPassword() {
     <div className="reset-password-container">
       <div className="reset-card">
         <div className="brand-section">
-          <div className="brand-text brand-text--md">formbridge.ai</div>
+          <img
+            src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+            alt="formbridge"
+          />
         </div>
 
         <div className="header-section">
-          <div className="icon-wrapper">
-             <i data-lucide="shield-check" style={{ width: '32px', height: '32px' }}></i>
-          </div>
-          <h1>Reset Password</h1>
+          <h1 className="font-serif">Reset Password</h1>
           <p>Please enter your new password below to regain access to your account.</p>
         </div>
 

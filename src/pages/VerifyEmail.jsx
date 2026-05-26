@@ -47,7 +47,12 @@ export default function VerifyEmail() {
       <div className="page-wrapper full-page">
         <div className="page-content container-xxl d-flex align-items-center justify-content-center">
           <div className="card shadow-sm border-0 p-4" style={{ maxWidth: 520, width: "100%" }}>
-            <div className="brand-text brand-text--md d-block mb-2 text-center">formbridge.ai</div>
+            <div className="d-flex justify-content-center mb-3">
+              <img
+                src={`${process.env.PUBLIC_URL}/assets/images/brand/formbridge-logo.png`}
+                alt="formbridge"
+              />
+            </div>
             <h5 className={`text-center mb-0 ${isError ? "text-danger" : "text-success"}`}>{status}</h5>
             {done && (
               <div className="text-center mt-3">

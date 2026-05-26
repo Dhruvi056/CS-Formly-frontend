@@ -1,0 +1,280 @@
+/* Email Settings page — matches formbridge app design */
+
+.fd-email-settings-page {
+  max-width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+}
+
+.fd-email-settings-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.fd-email-settings-modal .fd-email-settings-back {
+  color: #6b7280;
+  opacity: 0.85;
+}
+
+.fd-email-settings-modal .fd-email-settings-back:hover {
+  opacity: 1;
+  color: var(--brand-dark, #0e1116);
+}
+
+.fd-email-modal-backdrop {
+  background-color: rgba(14, 17, 22, 0.45) !important;
+}
+
+.fd-email-settings-modal .modal-dialog {
+  max-width: 640px;
+}
+
+.fd-email-settings-modal .modal-content {
+  border-radius: 12px;
+  overflow: visible;
+}
+
+.fd-email-settings-modal .modal-header {
+  padding: 1.25rem 1.5rem 0;
+}
+
+.fd-email-settings-modal .fd-email-settings-icon {
+  width: 42px;
+  height: 42px;
+  background-color: var(--brand-primary, #1b56ff) !important;
+  border: none;
+}
+
+.fd-email-settings-modal .modal-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--brand-dark, #0e1116);
+}
+
+.fd-email-settings-modal .fd-email-settings-close {
+  top: 1.15rem;
+  right: 1.15rem;
+  color: #6b7280;
+  opacity: 0.7;
+}
+
+.fd-email-settings-modal .fd-email-settings-close:hover {
+  opacity: 1;
+}
+
+.fd-email-settings-modal .fd-email-settings-tabs-wrap {
+  border-bottom: 1px solid #e5e7eb;
+  margin-top: 0.25rem;
+}
+
+.fd-email-settings-modal .fd-email-settings-tabs {
+  gap: 1.5rem;
+  font-size: 0.9375rem;
+}
+
+.fd-email-settings-modal .fd-email-settings-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  margin-bottom: -1px;
+}
+
+.fd-email-settings-modal .fd-email-settings-tab.active {
+  color: var(--brand-primary, #1b56ff);
+  font-weight: 700;
+  border-bottom-color: var(--brand-primary, #1b56ff);
+}
+
+.fd-email-settings-modal .modal-body {
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.fd-email-settings-modal .fd-email-field-label {
+  color: #6b7280;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.fd-email-settings-modal .fd-email-input,
+.fd-email-settings-modal .form-control.fd-email-input {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: var(--brand-dark, #0e1116);
+  font-size: 0.8125rem;
+  min-height: 38px;
+}
+
+.fd-email-settings-modal .fd-email-input:focus,
+.fd-email-settings-modal .form-control.fd-email-input:focus {
+  background-color: #fff;
+  border-color: var(--brand-primary, #1b56ff);
+  box-shadow: 0 0 0 0.15rem rgba(27, 86, 255, 0.12);
+}
+
+.fd-email-settings-modal .fd-email-input:disabled {
+  background-color: #f3f4f6;
+  opacity: 0.75;
+}
+
+.fd-email-settings-modal .form-check.form-switch .form-check-input {
+  cursor: pointer;
+  height: 1.15rem;
+  width: 2rem;
+}
+
+.fd-email-settings-modal .form-check.form-switch .form-check-input:checked {
+  background-color: var(--brand-primary, #1b56ff);
+  border-color: var(--brand-primary, #1b56ff);
+}
+
+.fd-email-settings-modal .form-check-label {
+  color: var(--brand-dark, #0e1116);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.fd-email-settings-modal .fd-email-clear-body {
+  color: #dc3545;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.fd-email-settings-modal .fd-email-clear-body:hover {
+  color: #b02a37;
+  text-decoration: underline;
+}
+
+.fd-email-settings-modal .fd-email-warning {
+  background-color: #fffbeb;
+  border: none;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 0.625rem;
+  line-height: 1.45;
+  padding: 0.5rem 0.75rem;
+}
+
+.fd-email-settings-modal .fd-quill-container .ql-toolbar {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px 6px 0 0;
+  font-family: var(--font-sans, "Work Sans", sans-serif);
+}
+
+.fd-email-settings-modal .fd-quill-container .ql-container {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0 0 6px 6px;
+  border-top: none;
+  font-family: var(--font-sans, "Work Sans", sans-serif);
+  font-size: 0.8125rem;
+  min-height: 140px;
+}
+
+.fd-email-settings-modal .fd-quill-container .ql-editor {
+  min-height: 120px;
+  padding: 0.75rem 1rem;
+}
+
+.fd-email-settings-modal .fd-quill-container.ql-disabled .ql-toolbar,
+.fd-email-settings-modal .fd-quill-container .ql-container.ql-disabled {
+  opacity: 0.65;
+}
+
+.fd-email-settings-modal .fd-email-recipient-card {
+  background: #f9fafb;
+  border: none;
+  border-radius: 8px;
+}
+
+.fd-email-settings-modal .fd-email-info-hint {
+  background: rgba(27, 86, 255, 0.08);
+  border: none;
+  border-radius: 8px;
+  color: var(--brand-primary, #1b56ff);
+  font-size: 0.75rem;
+}
+
+.fd-email-settings-modal .modal-footer {
+  border-top: none;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem 1.25rem;
+}
+
+.fd-email-settings-modal .fd-email-btn-cancel {
+  background: #f3f4f6;
+  border: none;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+}
+
+.fd-email-settings-modal .fd-email-btn-cancel:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.fd-email-settings-modal .fd-email-btn-save {
+  background-color: var(--brand-primary, #1b56ff) !important;
+  border-color: var(--brand-primary, #1b56ff) !important;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4rem 1.1rem;
+}
+
+.fd-email-settings-modal .fd-email-btn-save:hover {
+  background-color: var(--brand-primary-hover, #1545cc) !important;
+  border-color: var(--brand-primary-hover, #1545cc) !important;
+}
+
+.fd-email-settings-modal .fd-email-settings-advanced {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+}
+
+.fd-email-settings-modal .fd-email-settings-advanced summary {
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  list-style-position: outside;
+  margin-bottom: 0.5rem;
+}
+
+.fd-email-settings-modal .fd-email-settings-advanced[open] summary {
+  margin-bottom: 0.75rem;
+}
+
+/* Unlayer drag-and-drop custom HTML email builder */
+.fd-custom-template-editor {
+  min-height: 440px;
+  width: 100%;
+}
+
+.fd-custom-template-editor .email-editor-wrapper {
+  min-height: 420px;
+  width: 100%;
+}
+
+.fd-custom-template-editor .email-editor-wrapper iframe {
+  display: block !important;
+  min-height: 420px !important;
+  width: 100% !important;
+}
+
+.fd-custom-template-editor--disabled {
+  opacity: 0.65;
+  pointer-events: none;
+}
